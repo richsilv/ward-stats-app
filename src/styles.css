@@ -1,0 +1,57 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+.data-container {
+  height: 800px;
+  width: calc(100% - 4rem);
+  height: calc(100vh - 6rem);
+  margin: 2rem;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+}
+
+.leaflet-container {
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+.ward-details {
+  flex: 0 0 20rem;
+  padding: 0 1rem;
+  overflow-y: auto;
+}
+
+.weightings {
+  position: absolute;
+  z-index: 1000;
+  left: 0;
+  right: 0;
+  top: 25vh;
+  height: 75vh;
+  transform: translateY(calc(75vh - 1.5rem));
+  transition: transform 250ms;
+  box-shadow: 0px -3px 3px 0 rgba(0, 0, 0, 0.4);
+  background-color: #fff;
+}
+
+.weightings .contents {
+  overflow-y: auto;
+  height: calc(75vh - 1.5rem);
+}
+
+.toggle {
+  height: 1.5rem;
+  background-color: #88a;
+}
+
+.weightings.is-open {
+  transform: translateY(0);
+}

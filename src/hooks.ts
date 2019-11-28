@@ -1,0 +1,269 @@
+/* global gapi */
+import * as React from "react";
+import { debounce, DebounceSettings } from "lodash";
+
+import { ApiResponse, Ward } from "./types";
+
+export function useSheetData({
+  isSignedIn,
+  sheetName,
+  range
+}: {
+  isSignedIn: boolean;
+  sheetName: string;
+  range: string;
+}) {
+  const [
+    sheetDetails,
+    setSheetDetails
+  ] = React.useState<gapi.client.drive.File | null>(null);
+  const [sheetDataResponse, setSheetDataResponse] = React.useState<
+    ApiResponse<Array<Array<number | string>>>
+  >(ApiResponse.preload<Array<Array<number | string>>>());
+
+  React.useEffect(() => {
+    if (isSignedIn) {
+      gapi.client.drive.files
+        .list({
+          q: `name='${sheetName}'`,
+          pageSize: 1,
+          fields: "nextPageToken, files(id, name)"
+        })
+        .then(
+          response => {
+            setSheetDetails(
+              (response.result.files as Array<gapi.client.drive.File>)[0] ||
+                null
+            );
+          },
+          err => console.error(err)
+        );
+    }
+  }, [sheetName, isSignedIn]);
+
+  React.useEffect(() => {
+    if (sheetDetails && sheetDataResponse.isPreload()) {
+      const newSheetDataResponse = sheetDataResponse.load();
+      setSheetDataResponse(newSheetDataResponse);
+      gapi.client.sheets.spreadsheets.values
+        .get({
+          spreadsheetId: sheetDetails.id as string,
+          range,
+          majorDimension: "ROWS",
+          valueRenderOption: "UNFORMATTED_VALUE"
+        })
+        .then(
+          response => {
+            try {
+              if (!response.result.values) {
+                throw new Error("No value data returned");
+              }
+              setSheetDataResponse(
+                newSheetDataResponse.resolve(response.result.values as Array<
+                  Array<number | string>
+                >)
+              );
+            } catch (err) {
+              console.error(err);
+            }
+          },
+          error => setSheetDataResponse(newSheetDataResponse.fail(error))
+        );
+    }
+  }, [isSignedIn, range, sheetDetails, sheetDataResponse]);
+
+  return sheetDataResponse;
+}
+
+export function useDriveDocument({
+  isSignedIn,
+  filename
+}: {
+  isSignedIn: boolean;
+  filename: string;
+}) {
+  const [
+    geoJSONFileDetails,
+    setGeoJSONFileDetails
+  ] = React.useState<gapi.client.drive.File | null>(null);
+
+  const [geoJSONDataResponse, setGeoJSONDataResponse] = React.useState<
+    ApiResponse<GeoJSON.FeatureCollection>
+  >(ApiResponse.loading<GeoJSON.FeatureCollection>());
+
+  React.useEffect(() => {
+    if (isSignedIn) {
+      gapi.client.drive.files
+        .list({
+          q: `name='${filename}'`,
+          pageSize: 1,
+          fields: "nextPageToken, files(id, name)"
+        })
+        .then(
+          response => {
+            setGeoJSONFileDetails(
+              (response.result.files as Array<gapi.client.drive.File>)[0] ||
+                null
+            );
+          },
+          err => console.error(err)
+        );
+    }
+  }, [isSignedIn, filename]);
+
+  React.useEffect(() => {
+    if (geoJSONFileDetails) {
+      gapi.client.drive.files
+        .get({
+          fileId: geoJSONFileDetails.id as string,
+          alt: "media"
+        })
+        .then(
+          response => {
+            setGeoJSONDataResponse(
+              geoJSONDataResponse.resolve(
+                response.result as GeoJSON.FeatureCollection
+              )
+            );
+          },
+          error => setGeoJSONDataResponse(geoJSONDataResponse.fail(error))
+        );
+    }
+  }, [geoJSONFileDetails]);
+
+  return geoJSONDataResponse;
+}
+
+export function useConvertGeoJSONData(
+  response: ApiResponse<GeoJSON.FeatureCollection>
+) {
+  return React.useMemo(() => {
+    const data = response.data();
+    const error = response.error();
+    if (data) {
+      return ApiResponse.loaded(
+        new Map(
+          data.features.map(
+            feature =>
+              [(feature.properties as any)["WD11CD"], feature] as [string, Ward]
+          )
+        )
+      );
+    } else if (error) {
+      return ApiResponse.error<Map<string, Ward>>(error);
+    }
+    return ApiResponse.loading<Map<string, Ward>>();
+  }, [response]);
+}
+
+export function useFileUploadButton<D>(
+  fileInputRef: React.MutableRefObject<HTMLInputElement | null>
+) {
+  const [response, setResponse] = React.useState<ApiResponse<D>>(
+    ApiResponse.loading<D>()
+  );
+  const fileReader = React.useMemo(() => {
+    const reader = new FileReader();
+    reader.onloadend = event => {
+      setResponse(
+        ApiResponse.loaded<D>(JSON.parse(reader.result as string) as D)
+      );
+    };
+    return reader;
+  }, [setResponse]);
+
+  const onChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = (event.target.files as FileList)[0];
+      fileReader.readAsText(file);
+    },
+    [fileReader]
+  );
+  return [
+    {
+      ref: fileInputRef,
+      onChange
+    },
+    response
+  ] as [
+    {
+      ref: React.MutableRefObject<HTMLInputElement>;
+      onChange: React.ChangeEventHandler;
+    },
+    ApiResponse<D>
+  ];
+}
+
+export function useDebouncedCallback<
+  C extends (...args: Array<any>) => any,
+  D extends Array<any>
+>(callback: C, dependencies: D, wait: number, maxWait: number): C {
+  const [refreshToken, setRefreshToken] = React.useState({});
+  const [maxWaitActive, setMaxWaitActive] = React.useState<boolean>(false);
+  const debounceTimeout = React.useRef<number | undefined>();
+  const maxWaitTimeout = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    maxWaitTimeout.current = window.setTimeout(() => {
+      window.clearInterval(debounceTimeout.current);
+      if (maxWaitActive) {
+        setRefreshToken({});
+        setMaxWaitActive(false);
+      }
+    }, maxWait);
+    return () => window.clearTimeout(maxWaitTimeout.current);
+  }, [maxWaitActive, maxWait]);
+
+  React.useEffect(() => {
+    setMaxWaitActive(true);
+    debounceTimeout.current = window.setTimeout(() => {
+      setMaxWaitActive(false);
+      setRefreshToken({});
+    }, wait);
+    return () => window.clearTimeout(debounceTimeout.current);
+  }, [...dependencies, wait]);
+
+  React.useEffect(() => {
+    setMaxWaitActive(false);
+  }, [refreshToken]);
+
+  return React.useCallback<C>(callback, [refreshToken]);
+}
+
+export function useDebounce<A extends Array<any>, R, D extends Array<any>>(
+  calc: () => R,
+  dependencies: D,
+  wait: number,
+  maxWait: number
+): R {
+  const [refreshToken, setRefreshToken] = React.useState({});
+  const [maxWaitActive, setMaxWaitActive] = React.useState<boolean>(false);
+  const debounceTimeout = React.useRef<number | undefined>();
+  const maxWaitTimeout = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    maxWaitTimeout.current = window.setTimeout(() => {
+      window.clearInterval(debounceTimeout.current);
+      if (maxWaitActive) {
+        setRefreshToken({});
+        setMaxWaitActive(false);
+      }
+    }, maxWait);
+    return () => window.clearTimeout(maxWaitTimeout.current);
+  }, [maxWaitActive, maxWait]);
+
+  React.useEffect(() => {
+    setMaxWaitActive(true);
+    debounceTimeout.current = window.setTimeout(() => {
+      setMaxWaitActive(false);
+      setRefreshToken({});
+    }, wait);
+    return () => window.clearTimeout(debounceTimeout.current);
+  }, [...dependencies, wait]);
+
+  React.useEffect(() => {
+    setMaxWaitActive(false);
+  }, [refreshToken]);
+
+  return React.useMemo(() => calc(), [refreshToken]);
+}
