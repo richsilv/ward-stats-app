@@ -124,3 +124,5 @@ export enum ScoreType {
   Normalised,
   Rank
 }
+
+export type ConvertedGeoJSONData = Map<string, Feature<Polygon, IWardData>>;

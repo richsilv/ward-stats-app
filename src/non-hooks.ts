@@ -60,18 +60,8 @@ export async function getSheetData({
   }
 }
 
-export async function getDriveDocument<T>({
-  isSignedIn,
-  filename
-}: {
-  isSignedIn: boolean;
-  filename: string;
-}) {
+export async function getDriveDocument<T>({ filename }: { filename: string }) {
   try {
-    if (!isSignedIn) {
-      return ApiResponse.preload<T>();
-    }
-
     const geoJSONFileDetails: any = await new Promise((resolve, reject) =>
       gapi.client.drive.files
         .list({
@@ -116,26 +106,24 @@ export async function getDriveDocument<T>({
   }
 }
 
-export function useConvertGeoJSONData(
+export function convertGeoJSONData(
   response: ApiResponse<GeoJSON.FeatureCollection>
 ) {
-  return React.useMemo(() => {
-    const data = response.data();
-    const error = response.error();
-    if (data) {
-      return ApiResponse.loaded(
-        new Map(
-          data.features.map(
-            feature =>
-              [(feature.properties as any)["WD11CD"], feature] as [string, Ward]
-          )
+  const data = response.data();
+  const error = response.error();
+  if (data) {
+    return ApiResponse.loaded(
+      new Map(
+        data.features.map(
+          feature =>
+            [(feature.properties as any)["WD11CD"], feature] as [string, Ward]
         )
-      );
-    } else if (error) {
-      return ApiResponse.error<Map<string, Ward>>(error);
-    }
-    return ApiResponse.loading<Map<string, Ward>>();
-  }, [response]);
+      )
+    );
+  } else if (error) {
+    return ApiResponse.error<Map<string, Ward>>(error);
+  }
+  return ApiResponse.loading<Map<string, Ward>>();
 }
 
 export function useFileUploadButton<D>(

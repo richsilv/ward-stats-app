@@ -59,9 +59,9 @@ export function useSheetData({
                 throw new Error("No value data returned");
               }
               setSheetDataResponse(
-                newSheetDataResponse.resolve(response.result.values as Array<
-                  Array<number | string>
-                >)
+                newSheetDataResponse.resolve(
+                  response.result.values as Array<Array<number | string>>
+                )
               );
             } catch (err) {
               console.error(err);

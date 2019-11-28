@@ -19,21 +19,27 @@ import {
   useConvertGeoJSONData,
   useFileUploadButton
 } from "./hooks";
-import { FeatureCollection } from "geojson";
+import { FeatureCollection, Feature, Polygon } from "geojson";
 import {
   Ward,
   IWeightings,
   ScoreType,
   SheetData,
   ApiResponse,
-  IData
+  IData,
+  IWardData
 } from "./types";
 import { csvToObjects, normaliseAll } from "./utils";
 
 import "./styles.css";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
-import { getSheetData } from "./non-hooks";
+import {
+  getSheetData,
+  getDriveDocument,
+  convertGeoJSONData
+} from "./non-hooks";
+import { ConvertedGeoJSONData } from "./types";
 
 const dbName = "ward-stats";
 
@@ -46,10 +52,14 @@ function App() {
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
     ApiResponse<Array<IData>>
   >(ApiResponse.preload<Array<IData>>());
+  const [geoJsonDataResponse, setGeoJsonDataResponse] = React.useState<
+    ApiResponse<ConvertedGeoJSONData>
+  >(ApiResponse.preload<ConvertedGeoJSONData>());
   const signedInState = React.useState(false);
   const [isSignedIn] = signedInState;
 
   const dbPromise = React.useMemo(() => openIndexedDB(dbName), []);
+
   const makeConvertedSheetData = React.useCallback(async () => {
     if (!isSignedIn) {
       return Promise.resolve(ApiResponse.loading<Array<IData>>());
@@ -68,7 +78,7 @@ function App() {
     }
     getIndexedDBValue(
       dbPromise,
-      "geoJSON",
+      "sheetData",
       makeConvertedSheetData,
       ApiResponse.prototype
     ).then(newValue => {
@@ -93,6 +103,29 @@ function App() {
       );
     }
   }, [sheetDataResponse]);
+
+  const makeConvertedGeoJsonData = React.useCallback(async () => {
+    if (!isSignedIn) {
+      return Promise.resolve(ApiResponse.loading<ConvertedGeoJSONData>());
+    }
+    return await getDriveDocument<GeoJSON.FeatureCollection>({
+      filename: "Ward GeoJSON.json"
+    }).then(geoJsonData => convertGeoJSONData(geoJsonData));
+  }, [isSignedIn]);
+
+  React.useEffect(() => {
+    if (!isSignedIn) {
+      return;
+    }
+    getIndexedDBValue(
+      dbPromise,
+      "geoJSON",
+      makeConvertedGeoJsonData,
+      ApiResponse.prototype
+    ).then(newValue => {
+      setGeoJsonDataResponse(newValue);
+    });
+  }, [isSignedIn, dbPromise, makeConvertedGeoJsonData]);
 
   const geoJSONDataResponse = useConvertGeoJSONData(data);
 
