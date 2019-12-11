@@ -15,7 +15,7 @@ interface MapContainerProps {
   readonly selectedWard: Ward | null;
   readonly minScore: number;
   readonly scoreRange: number;
-  readonly geoJSONToRender: Array<Ward> | null;
+  readonly geoJsonToRender: Array<Ward> | null;
   readonly setSelectedWard: (ward: Ward) => void;
 }
 
@@ -23,7 +23,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   weightings,
   minScore,
   scoreRange,
-  geoJSONToRender,
+  geoJsonToRender,
   selectedWard,
   setSelectedWard
 }) => {
@@ -42,6 +42,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       const score =
         (calculateScore(weightings, properties!) - minScore) / scoreRange;
+
       return {
         stroke: zoom > 9,
         color: `rgba(0, 0, 0, ${isSelected ? 0.8 : 0.3})`,
@@ -69,14 +70,19 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   }, []);
 
   return (
-    <LeafletMap zoom={zoom} center={[53.0, -1.75]} onZoom={onZoom}>
+    <LeafletMap
+      zoom={zoom}
+      center={[53.0, -1.75]}
+      onZoom={onZoom}
+      preferCanvas={true}
+    >
       <TileLayer
         attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {geoJSONToRender ? (
+      {geoJsonToRender ? (
         <LeafletGeoJSON
-          data={(geoJSONToRender as unknown) as GeoJSON.GeoJsonObject}
+          data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
           style={styleFeatures}
           onClick={onClick}
         />

@@ -10,7 +10,7 @@ import { calculateScore } from "./utils";
 
 interface IDataContainerProps {
   sheetData: Array<IData>;
-  geoJSONData: Map<string, Ward>;
+  geoJsonData: Map<string, Ward>;
   weightings: IWeightings;
   selectedWard: Ward | null;
   setSelectedWard: (ward: Ward | null) => void;
@@ -19,29 +19,29 @@ interface IDataContainerProps {
 
 export const DataContainer: React.FC<IDataContainerProps> = ({
   sheetData,
-  geoJSONData,
+  geoJsonData,
   weightings,
   selectedWard,
   setSelectedWard,
   setWeightings
 }) => {
-  const geoJSONToRender = React.useMemo(() => {
-    if (!sheetData || !geoJSONData) return null;
+  const geoJsonToRender = React.useMemo(() => {
+    if (!sheetData || !geoJsonData) return null;
     const features: Array<Ward> = sheetData.map(data => {
       const wardCode = data[WARD_CODE_FIELD] as string;
-      const feature = geoJSONData.get(wardCode);
+      const feature = geoJsonData.get(wardCode);
       return {
         ...feature!,
         properties: { ...feature!.properties, ...data }
       };
     });
     return features;
-  }, [sheetData, geoJSONData]);
+  }, [sheetData, geoJsonData]);
 
   const { minScore, scoreRange } = useDebounce(
     () => {
-      if (!geoJSONToRender) return { minScore: 0, scoreRange: QUANTUM };
-      const { minScore, maxScore } = geoJSONToRender.reduce(
+      if (!geoJsonToRender) return { minScore: 0, scoreRange: QUANTUM };
+      const { minScore, maxScore } = geoJsonToRender.reduce(
         (
           { minScore, maxScore }: { minScore: number; maxScore: number },
           { properties }
@@ -56,7 +56,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
       );
       return { minScore, scoreRange: maxScore - minScore + QUANTUM };
     },
-    [geoJSONToRender, weightings],
+    [geoJsonToRender, weightings],
     2000,
     5000
   );
@@ -99,11 +99,12 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         selectedWard={selectedWard}
         minScore={minScore}
         scoreRange={scoreRange}
-        geoJSONToRender={geoJSONToRender}
+        geoJsonToRender={geoJsonToRender}
         setSelectedWard={setSelectedWard}
       />
       <WardDetails
         selectedWard={selectedWard}
+        setSelectedWard={setSelectedWard}
         score={score}
         rank={rank}
         total={sheetData.length}

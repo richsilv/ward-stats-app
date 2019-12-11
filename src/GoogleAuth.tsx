@@ -1,5 +1,21 @@
 /* global gapi */
 import * as React from "react";
+import {
+  Button,
+  makeStyles,
+  Theme,
+  createStyles,
+  useTheme
+} from "@material-ui/core";
+import { green } from "@material-ui/core/colors";
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    button: {
+      marginTop: theme.spacing(3)
+    }
+  })
+);
 
 interface IGoogleAuthProps {
   apiKey: string;
@@ -16,6 +32,9 @@ export const GoogleAuth: React.FC<IGoogleAuthProps> = ({
   scope,
   signedInState: [isSignedIn, updateIsSignedIn]
 }) => {
+  const theme = useTheme();
+  const classes = useStyles(theme);
+
   const googleApi = React.useRef<typeof gapi | null>(null);
 
   const handleSignIn = React.useCallback(() => {
@@ -52,12 +71,21 @@ export const GoogleAuth: React.FC<IGoogleAuthProps> = ({
   }, []);
 
   return isSignedIn ? (
-    <button type="button" onClick={handleSignOut}>
+    <Button
+      className={classes.button}
+      variant="contained"
+      onClick={handleSignOut}
+    >
       Sign Out
-    </button>
+    </Button>
   ) : (
-    <button type="button" onClick={handleSignIn}>
+    <Button
+      className={classes.button}
+      variant="contained"
+      color="primary"
+      onClick={handleSignIn}
+    >
       Sign In
-    </button>
+    </Button>
   );
 };

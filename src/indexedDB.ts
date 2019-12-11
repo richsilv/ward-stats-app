@@ -35,15 +35,15 @@ export function openIndexedDB(
   });
 }
 
-export function getIndexedDBValue<T>(
+export function getIndexedDBValue<T, S>(
   dbPromise: Promise<IDBDatabase | null>,
   key: string,
-  fallback: (key: string) => T | Promise<T>,
-  prototype?: object
+  fallback: (key: string) => Promise<S>,
+  deserialiser: (jsonPromise: Promise<S>) => Promise<T>
 ): Promise<T> {
   return dbPromise.then<T>(db => {
     if (!db) {
-      return fallback(key);
+      return deserialiser(fallback(key));
     }
 
     return new Promise<T>(resolve => {
@@ -54,14 +54,13 @@ export function getIndexedDBValue<T>(
       readRequest.onerror = function(error) {
         console.error(`Could not read key ${key} from DB ${db.name}`);
         console.error(error);
-        return resolve(fallback(key));
+        return deserialiser(fallback(key));
       };
       readRequest.onsuccess = function() {
         if (readRequest.result) {
-          if (prototype) {
-            Object.setPrototypeOf(readRequest.result.value, prototype);
-          }
-          return resolve(readRequest.result.value);
+          return resolve(
+            deserialiser(Promise.resolve(readRequest.result.value))
+          );
         }
 
         Promise.resolve(fallback(key)).then(result => {
@@ -73,7 +72,7 @@ export function getIndexedDBValue<T>(
             console.error(`Could not write new key ${key} to DB ${db.name}`);
             console.error(error);
           };
-          return resolve(result);
+          return resolve(deserialiser(Promise.resolve(result)));
         });
       };
     });

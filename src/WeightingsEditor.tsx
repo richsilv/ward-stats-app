@@ -1,5 +1,36 @@
 import * as React from "react";
 import { IWeightings, ScoreType } from "./types";
+import {
+  SwipeableDrawer,
+  makeStyles,
+  Theme,
+  useTheme,
+  Fab,
+  createStyles,
+  FormControl,
+  Select,
+  TextField,
+  InputLabel
+} from "@material-ui/core";
+import { Edit } from "@material-ui/icons";
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    fab: {
+      position: "absolute",
+      bottom: theme.spacing(2),
+      left: theme.spacing(2)
+    },
+    drawer: {
+      padding: theme.spacing(2)
+    },
+    entry: {
+      display: "flex",
+      flexWrap: "nowrap",
+      marginBottom: theme.spacing(2)
+    }
+  })
+);
 
 interface IWeightingsProps {
   weightings: IWeightings;
@@ -10,6 +41,9 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   weightings,
   setWeightings
 }) => {
+  const theme = useTheme();
+  const classes = useStyles(theme);
+
   const [isOpen, setIsOpen] = React.useState(false);
   const onClickToggle = React.useCallback(() => {
     setIsOpen(!isOpen);
@@ -29,12 +63,14 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   );
 
   const onChangeScoreTypeFactory = React.useCallback(
-    (header: string) => (event: React.ChangeEvent<HTMLSelectElement>) => {
+    (header: string) => (
+      event: React.ChangeEvent<{ name?: string; value: unknown }>
+    ) => {
       setWeightings({
         ...weightings,
         [header]: {
           weight: weightings[header].weight,
-          type: parseInt(event.currentTarget.value, 10) as ScoreType
+          type: parseInt(event.currentTarget.value as string, 10) as ScoreType
         }
       });
     },
@@ -42,31 +78,47 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   );
 
   return (
-    <div className={`weightings ${isOpen ? "is-open" : ""}`}>
-      <div className="toggle" onClick={onClickToggle}>
-        {isOpen ? "▼" : "▲"}
-      </div>
-      <div className="contents">
-        {Object.keys(weightings).map(header => {
-          const { weight, type } = weightings[header];
-          return (
-            <div className="weighting" key={header}>
-              <label>{header}</label>
-              <input
-                type="number"
-                value={weight || 0}
-                onChange={onChangeWeightFactory(header)}
-              />
-              <label>Normalise ?</label>
-              <select onChange={onChangeScoreTypeFactory(header)} value={type}>
-                <option value={ScoreType.Value}>Value</option>
-                <option value={ScoreType.Normalised}>Normalised</option>
-                <option value={ScoreType.Rank}>Rank</option>
-              </select>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+    <React.Fragment>
+      <Fab
+        aria-label="Edit weightings"
+        className={classes.fab}
+        color="primary"
+        onClick={onClickToggle}
+      >
+        <Edit />
+      </Fab>
+      <SwipeableDrawer
+        open={isOpen}
+        onClose={onClickToggle}
+        onOpen={onClickToggle}
+      >
+        <div className={classes.drawer}>
+          {Object.keys(weightings).map(header => {
+            const { weight, type } = weightings[header];
+            return (
+              <div className={classes.entry} key={header}>
+                <TextField
+                  label={header}
+                  value={weight || 0}
+                  onChange={onChangeWeightFactory(header)}
+                />
+                <FormControl>
+                  <InputLabel>&nbsp;</InputLabel>
+                  <Select
+                    native
+                    onChange={onChangeScoreTypeFactory(header)}
+                    value={type}
+                  >
+                    <option value={ScoreType.Value}>Value</option>
+                    <option value={ScoreType.Normalised}>Normalised</option>
+                    <option value={ScoreType.Rank}>Rank</option>
+                  </Select>
+                </FormControl>
+              </div>
+            );
+          })}
+        </div>
+      </SwipeableDrawer>
+    </React.Fragment>
   );
 };

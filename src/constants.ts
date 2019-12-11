@@ -29,3 +29,7 @@ export const RANKING_EXTENSION = "_¬RANKING¬";
 export const RANKING_EXTENSION_REGEXP = new RegExp(RANKING_EXTENSION);
 
 export const QUANTUM = 0.000001;
+
+export const GEO_JSON_FILE = "Ward GeoJSON LatLng.json";
+export const WARD_STATS_FILE = "Ward stats 2";
+export const WARD_STATS_RANGE = "API!A1:AD8571";

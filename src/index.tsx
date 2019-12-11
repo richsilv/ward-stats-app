@@ -2,7 +2,14 @@
 /* global gapi */
 import * as React from "react";
 import { render } from "react-dom";
-import { Container } from "@material-ui/core";
+import {
+  Container,
+  createMuiTheme,
+  LinearProgress,
+  Typography,
+  Theme
+} from "@material-ui/core";
+import { ThemeProvider, createStyles, makeStyles } from "@material-ui/styles";
 
 import {
   API_KEY,
@@ -11,27 +18,20 @@ import {
   SCOPE,
   NON_COMPARISON_FIELDS,
   NORMALISED_EXTENSION_REGEXP,
-  RANKING_EXTENSION_REGEXP
+  RANKING_EXTENSION_REGEXP,
+  WARD_STATS_FILE,
+  WARD_STATS_RANGE
 } from "./constants";
 import { GoogleAuth } from "./GoogleAuth";
-import {
-  useSheetData,
-  useConvertGeoJSONData,
-  useFileUploadButton
-} from "./hooks";
-import { FeatureCollection, Feature, Polygon } from "geojson";
 import {
   Ward,
   IWeightings,
   ScoreType,
   SheetData,
   ApiResponse,
-  IData,
-  IWardData
+  IData
 } from "./types";
 import { csvToObjects, normaliseAll } from "./utils";
-
-import "./styles.css";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
 import {
@@ -40,14 +40,25 @@ import {
   convertGeoJSONData
 } from "./non-hooks";
 import { ConvertedGeoJSONData } from "./types";
+import { GEO_JSON_FILE } from "./constants";
+
+import "./styles.css";
 
 const dbName = "ward-stats";
 
+const theme = createMuiTheme();
+
+const useStyles = makeStyles(() =>
+  createStyles({
+    progress: {
+      marginTop: "2rem"
+    }
+  })
+);
+
 function App() {
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const [uploadDataProps, data] = useFileUploadButton<FeatureCollection>(
-    fileInputRef
-  );
+  const classes = useStyles();
+
   const [weightings, setWeightings] = React.useState<IWeightings | null>(null);
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
     ApiResponse<Array<IData>>
@@ -62,25 +73,31 @@ function App() {
 
   const makeConvertedSheetData = React.useCallback(async () => {
     if (!isSignedIn) {
-      return Promise.resolve(ApiResponse.loading<Array<IData>>());
+      return Promise.reject("Not signed in");
     }
     return await getSheetData({
-      sheetName: "Ward stats 2",
-      range: "API!A1:AD8571"
-    }).then((sheetData: ApiResponse<SheetData>) =>
-      sheetData.map(csvToObjects).map(normaliseAll)
-    );
+      sheetName: WARD_STATS_FILE,
+      range: WARD_STATS_RANGE
+    }).then((sheetData: SheetData) => normaliseAll(csvToObjects(sheetData)));
   }, [isSignedIn]);
+
+  const wrapInApiResponse = React.useCallback<
+    <T extends any>(valuePromise: Promise<T>) => Promise<ApiResponse<T>>
+  >(<T extends any>(valuePromise: Promise<T>) => {
+    return valuePromise
+      .then(value => ApiResponse.loaded<T>(value))
+      .catch(error => ApiResponse.error<T>(error));
+  }, []);
 
   React.useEffect(() => {
     if (!isSignedIn) {
       return;
     }
-    getIndexedDBValue(
+    getIndexedDBValue<ApiResponse<Array<IData>>, Array<IData>>(
       dbPromise,
       "sheetData",
       makeConvertedSheetData,
-      ApiResponse.prototype
+      wrapInApiResponse
     ).then(newValue => {
       setSheetDataResponse(newValue);
     });
@@ -104,71 +121,75 @@ function App() {
     }
   }, [sheetDataResponse]);
 
-  const makeConvertedGeoJsonData = React.useCallback(async () => {
+  const makeGeoJsonData = React.useCallback(() => {
     if (!isSignedIn) {
-      return Promise.resolve(ApiResponse.loading<ConvertedGeoJSONData>());
+      return Promise.reject("Not signed in");
     }
-    return await getDriveDocument<GeoJSON.FeatureCollection>({
-      filename: "Ward GeoJSON.json"
-    }).then(geoJsonData => convertGeoJSONData(geoJsonData));
+    return getDriveDocument<GeoJSON.FeatureCollection>({
+      filename: GEO_JSON_FILE
+    });
   }, [isSignedIn]);
 
   React.useEffect(() => {
     if (!isSignedIn) {
       return;
     }
-    getIndexedDBValue(
-      dbPromise,
-      "geoJSON",
-      makeConvertedGeoJsonData,
-      ApiResponse.prototype
-    ).then(newValue => {
-      setGeoJsonDataResponse(newValue);
-    });
-  }, [isSignedIn, dbPromise, makeConvertedGeoJsonData]);
-
-  const geoJSONDataResponse = useConvertGeoJSONData(data);
+    getIndexedDBValue<
+      ApiResponse<ConvertedGeoJSONData>,
+      GeoJSON.FeatureCollection
+    >(dbPromise, "geoJSON", makeGeoJsonData, convertGeoJSONData).then(
+      newValue => {
+        setGeoJsonDataResponse(newValue);
+      }
+    );
+  }, [isSignedIn, dbPromise, makeGeoJsonData]);
 
   const [selectedWard, setSelectedWard] = React.useState<Ward | null>(null);
 
   const sheetData = sheetDataResponse.data();
-  const geoJSONData = geoJSONDataResponse.data();
-  console.log(geoJSONData);
+  const geoJsonData = geoJsonDataResponse.data();
 
   return (
-    <div className="App">
-      <Container>
-        <GoogleAuth
-          apiKey={API_KEY}
-          clientId={CLIENT_ID}
-          discoveryDocs={DISCOVERY_DOCS}
-          scope={SCOPE}
-          signedInState={signedInState}
-        />
-        <input type="file" {...uploadDataProps} />
-        {sheetData && geoJSONData && weightings ? (
-          <DataContainer
-            sheetData={sheetData}
-            geoJSONData={geoJSONData}
-            weightings={weightings}
-            selectedWard={selectedWard}
-            setSelectedWard={setSelectedWard}
-            setWeightings={setWeightings}
+    <ThemeProvider theme={theme}>
+      <div className="App">
+        <Container>
+          <GoogleAuth
+            apiKey={API_KEY}
+            clientId={CLIENT_ID}
+            discoveryDocs={DISCOVERY_DOCS}
+            scope={SCOPE}
+            signedInState={signedInState}
           />
-        ) : sheetDataResponse.isLoading() || geoJSONDataResponse.isLoading() ? (
-          <p>Loading...</p>
-        ) : (
-          <React.Fragment>
-            {sheetDataResponse.error() ? (
-              <p>convertedSheetDataResponse.error()</p>
-            ) : null}
-            {geoJSONDataResponse.error() ? (
-              <p>geoJSONDataResponse.error()</p>
-            ) : null}
-          </React.Fragment>
-        )}
-      </Container>
-    </div>
+          {sheetData && geoJsonData && weightings ? (
+            <DataContainer
+              sheetData={sheetData}
+              geoJsonData={geoJsonData}
+              weightings={weightings}
+              selectedWard={selectedWard}
+              setSelectedWard={setSelectedWard}
+              setWeightings={setWeightings}
+            />
+          ) : sheetDataResponse.isLoading() ||
+            geoJsonDataResponse.isLoading() ? (
+            <LinearProgress className={classes.progress} />
+          ) : (
+            <React.Fragment>
+              {sheetDataResponse.error() ? (
+                <Typography variant="body1" paragraph color="error">
+                  {sheetDataResponse.error()}
+                </Typography>
+              ) : geoJsonDataResponse.error() ? (
+                <Typography variant="body1" paragraph color="error">
+                  {geoJsonDataResponse.error()}
+                </Typography>
+              ) : (
+                <LinearProgress className={classes.progress} />
+              )}
+            </React.Fragment>
+          )}
+        </Container>
+      </div>
+    </ThemeProvider>
   );
 }
 
