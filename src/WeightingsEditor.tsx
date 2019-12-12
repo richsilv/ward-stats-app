@@ -100,6 +100,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
                 <TextField
                   label={header}
                   value={weight || 0}
+                  type="number"
                   onChange={onChangeWeightFactory(header)}
                 />
                 <FormControl>

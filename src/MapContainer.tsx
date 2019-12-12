@@ -1,4 +1,5 @@
 import * as React from "react";
+import Color from "color";
 import { Ward, IWeightings } from "./types";
 import {
   Map as LeafletMap,
@@ -6,9 +7,10 @@ import {
   TileLayer
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
-import { WARD_CODE_FIELD } from "./constants";
+import { WARD_CODE_FIELD, QUANTUM } from "./constants";
 import { calculateScore } from "./utils";
 import { useDebouncedCallback } from "./hooks";
+import { useTheme } from "@material-ui/core";
 
 interface MapContainerProps {
   readonly weightings: IWeightings;
@@ -27,7 +29,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   selectedWard,
   setSelectedWard
 }) => {
-  const [zoom, setZoom] = React.useState(6);
+  const theme = useTheme();
+  const [zoom, setZoom] = React.useState(8);
+
+  const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
+    theme
+  ]);
+  const badColor = React.useMemo(() => Color(theme.palette.error.main), [
+    theme
+  ]);
+
+  const noScores = React.useMemo(() => scoreRange === QUANTUM, [scoreRange]);
 
   const styleFeatures = useDebouncedCallback(
     (feature?: GeoJSON.Feature) => {
@@ -49,11 +61,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         weight: isSelected ? 2 : 1,
         opacity: 0.6,
         fill: true,
-        fillOpacity: Math.abs(0.5 - score) * 0.5 + 0.3,
-        fillColor: `rgb(${Math.max(
-          0,
-          Math.round(255 - score * 255)
-        )}, ${Math.min(255, Math.round(score * 255))}, 0)`
+        fillOpacity: noScores ? 0 : Math.abs(0.5 - score) * 0.5 + 0.3,
+        fillColor: badColor.mix(goodColor, score).string()
       };
     },
     [zoom, weightings, minScore, scoreRange, selectedWard],
@@ -74,6 +83,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       zoom={zoom}
       center={[53.0, -1.75]}
       onZoom={onZoom}
+      zoomAnimation={false}
+      zoomSnap={0}
       preferCanvas={true}
     >
       <TileLayer
