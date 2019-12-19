@@ -96,20 +96,16 @@ export async function getDriveDocument<T>({ filename }: { filename: string }) {
 }
 
 export async function convertGeoJSONData(
-  responsePromise: Promise<GeoJSON.FeatureCollection>
-): Promise<ApiResponse<ConvertedGeoJSONData>> {
-  return responsePromise
-    .then(response =>
-      ApiResponse.loaded<ConvertedGeoJSONData>(
-        new Map(
-          response.features.map(
-            feature =>
-              [(feature.properties as any)["WD11CD"], feature] as [string, Ward]
-          )
-        )
+  response: GeoJSON.FeatureCollection
+): Promise<ConvertedGeoJSONData> {
+  return Promise.resolve(
+    new Map(
+      response.features.map(
+        feature =>
+          [(feature.properties as any)["WD11CD"], feature] as [string, Ward]
       )
     )
-    .catch(error => ApiResponse.error<ConvertedGeoJSONData>(error));
+  );
 }
 
 export function useFileUploadButton<D>(

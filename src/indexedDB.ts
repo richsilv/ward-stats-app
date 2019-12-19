@@ -35,18 +35,31 @@ export function openIndexedDB(
   });
 }
 
-export function getIndexedDBValue<T, S>(
+export function getIndexedDBValue<T, S = T>(
   dbPromise: Promise<IDBDatabase | null>,
   key: string,
   fallback: (key: string) => Promise<S>,
-  deserialiser: (jsonPromise: Promise<S>) => Promise<T>
+  deserialiser: (jsonPromise: S) => Promise<T> = value =>
+    Promise.resolve((value as unknown) as T)
 ): Promise<T> {
   return dbPromise.then<T>(db => {
     if (!db) {
-      return deserialiser(fallback(key));
+      return fallback(key)
+        .then(deserialiser)
+        .catch((error: Error) => {
+          console.error("Could not calculate fallback value or deserialise!");
+          console.error(error);
+          throw error;
+        });
     }
 
-    return new Promise<T>(resolve => {
+    return new Promise<T>((resolve, reject) => {
+      const catchFallbackFailure = (error: Error) => {
+        console.error("Could not calculate fallback value or deserialise!");
+        console.error(error);
+        reject(error);
+      };
+
       const os = db
         .transaction([db.name + OBJECT_STORE_MODIFIER], "readwrite")
         .objectStore(db.name + OBJECT_STORE_MODIFIER);
@@ -54,26 +67,31 @@ export function getIndexedDBValue<T, S>(
       readRequest.onerror = function(error) {
         console.error(`Could not read key ${key} from DB ${db.name}`);
         console.error(error);
-        return deserialiser(fallback(key));
+        return fallback(key)
+          .then(deserialiser)
+          .then(resolve)
+          .catch(catchFallbackFailure);
       };
       readRequest.onsuccess = function() {
         if (readRequest.result) {
-          return resolve(
-            deserialiser(Promise.resolve(readRequest.result.value))
-          );
+          return deserialiser(readRequest.result.value)
+            .then(resolve)
+            .catch(catchFallbackFailure);
         }
 
-        Promise.resolve(fallback(key)).then(result => {
-          const writeOs = db
-            .transaction([db.name + OBJECT_STORE_MODIFIER], "readwrite")
-            .objectStore(db.name + OBJECT_STORE_MODIFIER);
-          const writeRequest = writeOs.add({ id: key, value: result });
-          writeRequest.onerror = function(error) {
-            console.error(`Could not write new key ${key} to DB ${db.name}`);
-            console.error(error);
-          };
-          return resolve(deserialiser(Promise.resolve(result)));
-        });
+        Promise.resolve(fallback(key))
+          .then(result => {
+            const writeOs = db
+              .transaction([db.name + OBJECT_STORE_MODIFIER], "readwrite")
+              .objectStore(db.name + OBJECT_STORE_MODIFIER);
+            const writeRequest = writeOs.add({ id: key, value: result });
+            writeRequest.onerror = function(error) {
+              console.error(`Could not write new key ${key} to DB ${db.name}`);
+              console.error(error);
+            };
+            return deserialiser(result);
+          })
+          .catch(catchFallbackFailure);
       };
     });
   });

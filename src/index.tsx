@@ -56,6 +56,21 @@ const useStyles = makeStyles(() =>
   })
 );
 
+function setWrappedState<T>(
+  setter: (value: ApiResponse<T>) => void,
+  response: Promise<T>
+) {
+  response
+    .then(newValue => {
+      if (newValue) {
+        setter(ApiResponse.loaded<T>(newValue));
+      }
+    })
+    .catch(error => {
+      setter(ApiResponse.error<T>(error));
+    });
+}
+
 function App() {
   const classes = useStyles();
 
@@ -81,26 +96,15 @@ function App() {
     }).then((sheetData: SheetData) => normaliseAll(csvToObjects(sheetData)));
   }, [isSignedIn]);
 
-  const wrapInApiResponse = React.useCallback<
-    <T extends any>(valuePromise: Promise<T>) => Promise<ApiResponse<T>>
-  >(<T extends any>(valuePromise: Promise<T>) => {
-    return valuePromise
-      .then(value => ApiResponse.loaded<T>(value))
-      .catch(error => ApiResponse.error<T>(error));
-  }, []);
-
   React.useEffect(() => {
-    if (!isSignedIn) {
-      return;
-    }
-    getIndexedDBValue<ApiResponse<Array<IData>>, Array<IData>>(
-      dbPromise,
-      "sheetData",
-      makeConvertedSheetData,
-      wrapInApiResponse
-    ).then(newValue => {
-      setSheetDataResponse(newValue);
-    });
+    setWrappedState(
+      setSheetDataResponse,
+      getIndexedDBValue<Array<IData>>(
+        dbPromise,
+        "sheetData",
+        makeConvertedSheetData
+      )
+    );
   }, [isSignedIn, dbPromise, makeConvertedSheetData]);
 
   React.useEffect(() => {
@@ -131,16 +135,14 @@ function App() {
   }, [isSignedIn]);
 
   React.useEffect(() => {
-    if (!isSignedIn) {
-      return;
-    }
-    getIndexedDBValue<
-      ApiResponse<ConvertedGeoJSONData>,
-      GeoJSON.FeatureCollection
-    >(dbPromise, "geoJSON", makeGeoJsonData, convertGeoJSONData).then(
-      newValue => {
-        setGeoJsonDataResponse(newValue);
-      }
+    setWrappedState(
+      setGeoJsonDataResponse,
+      getIndexedDBValue<ConvertedGeoJSONData, GeoJSON.FeatureCollection>(
+        dbPromise,
+        "geoJSON",
+        makeGeoJsonData,
+        convertGeoJSONData
+      )
     );
   }, [isSignedIn, dbPromise, makeGeoJsonData]);
 
