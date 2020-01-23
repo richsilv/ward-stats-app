@@ -1,6 +1,8 @@
+declare const process: any;
+
 export const CLIENT_ID =
   "978388352537-fnn94mu0emjd6tdme0tokctt80iludg7.apps.googleusercontent.com";
-export const API_KEY = "AIzaSyCNKv31Uepktj0jpyZ7xZy_NofctPYxH9M";
+export const API_KEY = (process as any).env.API_KEY;
 export const DISCOVERY_DOCS = [
   "https://sheets.googleapis.com/$discovery/rest?version=v4",
   "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"
