@@ -45,36 +45,49 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   const classes = useStyles(theme);
 
   const [isOpen, setIsOpen] = React.useState(false);
+  const [localWeightings, setLocalWeightings] = React.useState<IWeightings>(
+    weightings
+  );
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setLocalWeightings(weightings);
+    }
+  }, [isOpen, weightings]);
+
   const onClickToggle = React.useCallback(() => {
+    if (isOpen) {
+      setWeightings(localWeightings);
+    }
     setIsOpen(!isOpen);
-  }, [isOpen]);
+  }, [isOpen, setWeightings, localWeightings]);
 
   const onChangeWeightFactory = React.useCallback(
     (header: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setWeightings({
-        ...weightings,
+      setLocalWeightings({
+        ...localWeightings,
         [header]: {
-          type: weightings[header].type,
+          type: localWeightings[header].type,
           weight: parseFloat(event.currentTarget.value)
         }
       });
     },
-    [weightings]
+    [localWeightings]
   );
 
   const onChangeScoreTypeFactory = React.useCallback(
     (header: string) => (
       event: React.ChangeEvent<{ name?: string; value: unknown }>
     ) => {
-      setWeightings({
-        ...weightings,
+      setLocalWeightings({
+        ...localWeightings,
         [header]: {
-          weight: weightings[header].weight,
+          weight: localWeightings[header].weight,
           type: parseInt(event.currentTarget.value as string, 10) as ScoreType
         }
       });
     },
-    [weightings]
+    [localWeightings]
   );
 
   return (
@@ -93,13 +106,18 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
         onOpen={onClickToggle}
       >
         <div className={classes.drawer}>
-          {Object.keys(weightings).map(header => {
-            const { weight, type } = weightings[header];
+          {Object.keys(localWeightings).map(header => {
+            const { weight, type } = localWeightings[header];
             return (
               <div className={classes.entry} key={header}>
                 <TextField
                   label={header}
                   value={weight || 0}
+                  inputProps={{
+                    step: 0.5,
+                    type: "number",
+                    inputmode: "numeric"
+                  }}
                   type="number"
                   onChange={onChangeWeightFactory(header)}
                 />
