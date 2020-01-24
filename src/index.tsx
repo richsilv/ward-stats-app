@@ -43,6 +43,7 @@ import { ConvertedGeoJSONData } from "./types";
 import { GEO_JSON_FILE } from "./constants";
 
 import "./styles.css";
+import { useLocallyStoredState } from "./hooks";
 
 const dbName = "ward-stats";
 
@@ -74,7 +75,10 @@ function setWrappedState<T>(
 function App() {
   const classes = useStyles();
 
-  const [weightings, setWeightings] = React.useState<IWeightings | null>(null);
+  const [weightings, setWeightings] = useLocallyStoredState<IWeightings | null>(
+    "weightings",
+    null
+  );
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
     ApiResponse<Array<IData>>
   >(ApiResponse.preload<Array<IData>>());

@@ -116,7 +116,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
                   inputProps={{
                     step: 0.5,
                     type: "number",
-                    inputmode: "numeric"
+                    inputMode: "numeric"
                   }}
                   type="number"
                   onChange={onChangeWeightFactory(header)}

@@ -267,3 +267,30 @@ export function useDebounce<A extends Array<any>, R, D extends Array<any>>(
 
   return React.useMemo(() => calc(), [refreshToken]);
 }
+
+export function useLocallyStoredState<T>(
+  key: string,
+  defaultValue: T
+): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = React.useState<T>(defaultValue);
+  const localStorageKey = `LOCAL_STORAGE_${key}`;
+
+  React.useEffect(() => {
+    const encodedState = localStorage.getItem(localStorageKey);
+    try {
+      if (encodedState) {
+        const decodedState = JSON.parse(atob(encodedState));
+        setState(decodedState);
+      }
+    } catch (error) {
+      console.error(`Cannot decode stored state for ${key}`);
+      console.error(error);
+    }
+  }, [localStorageKey]);
+
+  React.useEffect(() => {
+    localStorage.setItem(localStorageKey, btoa(JSON.stringify(state)));
+  }, [localStorageKey, state]);
+
+  return [state, setState];
+}
