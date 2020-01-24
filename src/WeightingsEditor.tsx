@@ -13,6 +13,7 @@ import {
   InputLabel
 } from "@material-ui/core";
 import { Edit } from "@material-ui/icons";
+import { useParameterisedCallbacks } from "./hooks";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -44,50 +45,69 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   const theme = useTheme();
   const classes = useStyles(theme);
 
+  const wasOpen = React.useRef(false);
   const [isOpen, setIsOpen] = React.useState(false);
   const [localWeightings, setLocalWeightings] = React.useState<IWeightings>(
     weightings
   );
 
   React.useEffect(() => {
-    if (!isOpen) {
+    if (isOpen && !wasOpen.current) {
       setLocalWeightings(weightings);
     }
-  }, [isOpen, weightings]);
+  }, [isOpen, wasOpen, weightings]);
 
-  const onClickToggle = React.useCallback(() => {
-    if (isOpen) {
+  React.useEffect(() => {
+    if (wasOpen && !isOpen) {
       setWeightings(localWeightings);
     }
-    setIsOpen(!isOpen);
-  }, [isOpen, setWeightings, localWeightings]);
+  }, [isOpen, wasOpen, localWeightings]);
 
-  const onChangeWeightFactory = React.useCallback(
-    (header: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setLocalWeightings({
-        ...localWeightings,
+  React.useEffect(() => {
+    wasOpen.current = isOpen;
+  }, [isOpen, wasOpen]);
+
+  const onClickToggle = React.useCallback(() => {
+    setIsOpen(currentIsOpen => !currentIsOpen);
+  }, []);
+
+  const onChangeWeightArray = useParameterisedCallbacks<
+    React.ChangeEvent<HTMLInputElement>,
+    (header: string, event: React.ChangeEvent<HTMLInputElement>) => any
+  >(
+    Object.keys(localWeightings),
+    (header, event) => {
+      const value = event.currentTarget.value;
+      setLocalWeightings(currentLocalWeightings => ({
+        ...currentLocalWeightings,
         [header]: {
-          type: localWeightings[header].type,
-          weight: parseFloat(event.currentTarget.value)
+          type: currentLocalWeightings[header].type,
+          weight: parseFloat(value)
         }
-      });
+      }));
     },
-    [localWeightings]
+    []
   );
 
-  const onChangeScoreTypeFactory = React.useCallback(
-    (header: string) => (
+  const onChangeScoreTypeArray = useParameterisedCallbacks<
+    React.ChangeEvent<{ name?: string; value: unknown }>,
+    (
+      header: string,
       event: React.ChangeEvent<{ name?: string; value: unknown }>
-    ) => {
-      setLocalWeightings({
-        ...localWeightings,
+    ) => any
+  >(
+    Object.keys(localWeightings),
+    (header, event) => {
+      const value = event.currentTarget.value;
+      setLocalWeightings(currentLocalWeightings => ({
+        ...currentLocalWeightings,
         [header]: {
-          weight: localWeightings[header].weight,
-          type: parseInt(event.currentTarget.value as string, 10) as ScoreType
+          weight: currentLocalWeightings[header].weight,
+          type: parseInt(value as string, 10) as ScoreType
         }
-      });
+      }));
     },
-    [localWeightings]
+    []
   );
 
   return (
@@ -119,13 +139,13 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
                     inputMode: "numeric"
                   }}
                   type="number"
-                  onChange={onChangeWeightFactory(header)}
+                  onChange={onChangeWeightArray.get(header)}
                 />
                 <FormControl>
                   <InputLabel>&nbsp;</InputLabel>
                   <Select
                     native
-                    onChange={onChangeScoreTypeFactory(header)}
+                    onChange={onChangeScoreTypeArray.get(header)}
                     value={type}
                   >
                     <option value={ScoreType.Value}>Value</option>

@@ -230,42 +230,70 @@ export function useDebouncedCallback<
   return React.useCallback<C>(callback, [refreshToken]);
 }
 
+export function useDebouncedValue(value: any, timeout: number) {
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
+  React.useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, timeout);
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [value]);
+
+  return debouncedValue;
+}
+
 export function useDebounce<A extends Array<any>, R, D extends Array<any>>(
   calc: () => R,
   dependencies: D,
   wait: number,
   maxWait: number
-): R {
+): [R, boolean] {
   const [refreshToken, setRefreshToken] = React.useState({});
   const [maxWaitActive, setMaxWaitActive] = React.useState<boolean>(false);
+  const [isWaiting, setIsWaiting] = React.useState(false);
   const debounceTimeout = React.useRef<number | undefined>();
   const maxWaitTimeout = React.useRef<number | undefined>();
 
   React.useEffect(() => {
+    setIsWaiting(true);
     maxWaitTimeout.current = window.setTimeout(() => {
+      setIsWaiting(false);
       window.clearInterval(debounceTimeout.current);
       if (maxWaitActive) {
         setRefreshToken({});
         setMaxWaitActive(false);
       }
     }, maxWait);
-    return () => window.clearTimeout(maxWaitTimeout.current);
+    return () => {
+      setIsWaiting(false);
+      window.clearTimeout(maxWaitTimeout.current);
+    };
   }, [maxWaitActive, maxWait]);
 
   React.useEffect(() => {
     setMaxWaitActive(true);
+    setIsWaiting(true);
     debounceTimeout.current = window.setTimeout(() => {
+      setIsWaiting(false);
       setMaxWaitActive(false);
       setRefreshToken({});
     }, wait);
-    return () => window.clearTimeout(debounceTimeout.current);
+    return () => {
+      setIsWaiting(false);
+      window.clearTimeout(debounceTimeout.current);
+    };
   }, [...dependencies, wait]);
 
   React.useEffect(() => {
     setMaxWaitActive(false);
   }, [refreshToken]);
 
-  return React.useMemo(() => calc(), [refreshToken]);
+  return React.useMemo((): [R, boolean] => [calc(), isWaiting], [
+    refreshToken,
+    isWaiting
+  ]);
 }
 
 export function useLocallyStoredState<T>(
@@ -293,4 +321,24 @@ export function useLocallyStoredState<T>(
   }, [localStorageKey, state]);
 
   return [state, setState];
+}
+
+export function useParameterisedCallbacks<
+  E extends React.SyntheticEvent<any>,
+  T extends (parameter: string, event: E) => any
+>(parameters: Array<string>, callback: T, deps: React.DependencyList) {
+  const storedCallbacks = React.useRef(
+    new Map<string, React.EventHandler<E>>()
+  );
+
+  React.useEffect(() => {
+    storedCallbacks.current = new Map<string, React.EventHandler<E>>(
+      parameters.map((parameter): [
+        string,
+        React.EventHandler<React.SyntheticEvent>
+      ] => [parameter, (event: E) => callback(parameter, event)])
+    );
+  }, [...parameters, ...deps]);
+
+  return storedCallbacks.current;
 }

@@ -38,51 +38,41 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
     return features;
   }, [sheetData, geoJsonData]);
 
-  const { minScore, scoreRange } = useDebounce(
-    () => {
-      if (!geoJsonToRender) return { minScore: 0, scoreRange: QUANTUM };
-      const { minScore, maxScore } = geoJsonToRender.reduce(
-        (
-          { minScore, maxScore }: { minScore: number; maxScore: number },
-          { properties }
-        ) => {
-          const score = calculateScore(weightings, properties!);
-          return {
-            minScore: Math.min(minScore, score),
-            maxScore: Math.max(maxScore, score)
-          };
-        },
-        { minScore: Infinity, maxScore: -Infinity }
-      );
-      return { minScore, scoreRange: maxScore - minScore + QUANTUM };
-    },
-    [geoJsonToRender, weightings],
-    2000,
-    5000
-  );
+  const { minScore, scoreRange } = React.useMemo(() => {
+    if (!geoJsonToRender) return { minScore: 0, scoreRange: QUANTUM };
+    const { minScore, maxScore } = geoJsonToRender.reduce(
+      (
+        { minScore, maxScore }: { minScore: number; maxScore: number },
+        { properties }
+      ) => {
+        const score = calculateScore(weightings, properties!);
+        return {
+          minScore: Math.min(minScore, score),
+          maxScore: Math.max(maxScore, score)
+        };
+      },
+      { minScore: Infinity, maxScore: -Infinity }
+    );
+    return { minScore, scoreRange: maxScore - minScore + QUANTUM };
+  }, [geoJsonToRender, weightings]);
 
-  const rankings = useDebounce(
-    () => {
-      return new Map(
-        sheetData
-          .map((dataItem): [string, number] => [
-            dataItem[WARD_CODE_FIELD] as string,
-            (calculateScore(weightings, dataItem) - minScore) / scoreRange
-          ])
-          .sort(([_, scoreA], [__, scoreB]) => scoreB - scoreA)
-          .map(
-            ([wardCode, score], index) =>
-              [wardCode, { score, rank: index + 1 }] as [
-                string,
-                { score: number; rank: number }
-              ]
-          )
-      );
-    },
-    [weightings, sheetData, minScore, scoreRange],
-    2000,
-    5000
-  );
+  const rankings = React.useMemo(() => {
+    return new Map(
+      sheetData
+        .map((dataItem): [string, number] => [
+          dataItem[WARD_CODE_FIELD] as string,
+          (calculateScore(weightings, dataItem) - minScore) / scoreRange
+        ])
+        .sort(([_, scoreA], [__, scoreB]) => scoreB - scoreA)
+        .map(
+          ([wardCode, score], index) =>
+            [wardCode, { score, rank: index + 1 }] as [
+              string,
+              { score: number; rank: number }
+            ]
+        )
+    );
+  }, [sheetData, minScore, scoreRange]);
 
   const { score, rank } = React.useMemo(() => {
     return (
