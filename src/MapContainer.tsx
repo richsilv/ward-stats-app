@@ -1,5 +1,6 @@
 import * as React from "react";
 import Color from "color";
+
 import { Ward, IWeightings } from "./types";
 import {
   Map as LeafletMap,
@@ -7,26 +8,29 @@ import {
   TileLayer
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
-import { WARD_CODE_FIELD, QUANTUM } from "./constants";
-import { calculateScore } from "./utils";
+import { WARD_CODE_FIELD } from "./constants";
 import { useDebouncedCallback } from "./hooks";
 import { useTheme } from "@material-ui/core";
 
 interface MapContainerProps {
   readonly weightings: IWeightings;
   readonly selectedWard: Ward | null;
-  readonly minScore: number;
-  readonly scoreRange: number;
+  readonly noScores: boolean;
+  readonly rankings: Map<string, { score: number; rank: number }>;
   readonly geoJsonToRender: Array<Ward> | null;
+  readonly showTop: number | null;
+  readonly showAbove: number | null;
   readonly setSelectedWard: (ward: Ward) => void;
 }
 
 export const MapContainer: React.FC<MapContainerProps> = ({
   weightings,
-  minScore,
-  scoreRange,
+  noScores,
+  rankings,
   geoJsonToRender,
   selectedWard,
+  showTop,
+  showAbove,
   setSelectedWard
 }) => {
   const theme = useTheme();
@@ -39,8 +43,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     theme
   ]);
 
-  const noScores = React.useMemo(() => scoreRange === QUANTUM, [scoreRange]);
-
   const styleFeatures = useDebouncedCallback(
     (feature?: GeoJSON.Feature) => {
       if (!feature || !feature.properties) {
@@ -52,8 +54,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         properties[WARD_CODE_FIELD] ===
           selectedWard.properties[WARD_CODE_FIELD];
 
-      const score =
-        (calculateScore(weightings, properties!) - minScore) / scoreRange;
+      const { score, rank } = rankings.get(properties[WARD_CODE_FIELD]) || {
+        score: 0,
+        rank: 0
+      };
+
+      if ((showTop && showTop < rank) || (showAbove && score < showAbove)) {
+        return {
+          opacity: isSelected ? 0.6 : 0,
+          fill: false
+        };
+      }
 
       return {
         stroke: zoom > 9,
@@ -65,7 +76,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         fillColor: badColor.mix(goodColor, score).string()
       };
     },
-    [zoom, weightings, minScore, scoreRange, selectedWard],
+    [zoom, weightings, rankings, selectedWard, showTop, showAbove],
     250,
     1000
   );

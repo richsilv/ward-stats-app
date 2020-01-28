@@ -1,6 +1,5 @@
 /* global gapi */
 import * as React from "react";
-import { debounce, DebounceSettings } from "lodash";
 
 import { ApiResponse, Ward } from "./types";
 
@@ -230,20 +229,6 @@ export function useDebouncedCallback<
   return React.useCallback<C>(callback, [refreshToken]);
 }
 
-export function useDebouncedValue(value: any, timeout: number) {
-  const [debouncedValue, setDebouncedValue] = React.useState(value);
-  React.useEffect(() => {
-    const handle = window.setTimeout(() => {
-      setDebouncedValue(value);
-    }, timeout);
-    return () => {
-      window.clearTimeout(handle);
-    };
-  }, [value]);
-
-  return debouncedValue;
-}
-
 export function useDebounce<A extends Array<any>, R, D extends Array<any>>(
   calc: () => R,
   dependencies: D,
@@ -323,10 +308,11 @@ export function useLocallyStoredState<T>(
   return [state, setState];
 }
 
-export function useParameterisedCallbacks<
-  E extends React.SyntheticEvent<any>,
-  T extends (parameter: string, event: E) => any
->(parameters: Array<string>, callback: T, deps: React.DependencyList) {
+export function useParameterisedCallbacks<E extends React.SyntheticEvent<any>>(
+  parameters: Array<string>,
+  callback: (parameter: string, event: E, ...args: any) => any,
+  deps: React.DependencyList
+) {
   const storedCallbacks = React.useRef(
     new Map<string, React.EventHandler<E>>()
   );
@@ -336,9 +322,35 @@ export function useParameterisedCallbacks<
       parameters.map((parameter): [
         string,
         React.EventHandler<React.SyntheticEvent>
-      ] => [parameter, (event: E) => callback(parameter, event)])
+      ] => [
+        parameter,
+        (event: E, ...args: any) => callback(parameter, event, ...args)
+      ])
     );
   }, [...parameters, ...deps]);
 
   return storedCallbacks.current;
+}
+
+export function useWorkerComputation<T>(
+  worker: Worker,
+  name: string,
+  ...data: Array<any>
+) {
+  const [value, setValue] = React.useState<T | null>(null);
+  const callback = React.useCallback((event: MessageEvent) => {
+    if (event.data.name === name) {
+      if (event.data.error) {
+        console.error(event.data.error);
+      } else {
+        setValue(event.data.data);
+      }
+    }
+  }, data);
+  React.useEffect(() => {
+    worker.addEventListener("message", callback);
+    worker.postMessage({ name, data });
+  }, [callback]);
+
+  return value;
 }

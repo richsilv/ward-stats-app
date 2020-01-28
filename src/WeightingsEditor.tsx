@@ -1,5 +1,5 @@
 import * as React from "react";
-import { IWeightings, ScoreType } from "./types";
+import { IWeightings, ScoreType, StatePair } from "./types";
 import {
   SwipeableDrawer,
   makeStyles,
@@ -10,7 +10,12 @@ import {
   FormControl,
   Select,
   TextField,
-  InputLabel
+  InputLabel,
+  Typography,
+  Grid,
+  Slider,
+  Input,
+  Divider
 } from "@material-ui/core";
 import { Edit } from "@material-ui/icons";
 import { useParameterisedCallbacks } from "./hooks";
@@ -29,6 +34,9 @@ const useStyles = makeStyles((theme: Theme) =>
       display: "flex",
       flexWrap: "nowrap",
       marginBottom: theme.spacing(2)
+    },
+    sliderInput: {
+      width: 60
     }
   })
 );
@@ -36,11 +44,15 @@ const useStyles = makeStyles((theme: Theme) =>
 interface IWeightingsProps {
   weightings: IWeightings;
   setWeightings: (weightings: IWeightings) => void;
+  showTopState: StatePair<number | null>;
+  showAboveState: StatePair<number | null>;
 }
 
 export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   weightings,
-  setWeightings
+  setWeightings,
+  showTopState: [showTop, setShowTop],
+  showAboveState: [showAbove, setShowAbove]
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
@@ -72,8 +84,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   }, []);
 
   const onChangeWeightArray = useParameterisedCallbacks<
-    React.ChangeEvent<HTMLInputElement>,
-    (header: string, event: React.ChangeEvent<HTMLInputElement>) => any
+    React.ChangeEvent<HTMLInputElement>
   >(
     Object.keys(localWeightings),
     (header, event) => {
@@ -90,11 +101,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   );
 
   const onChangeScoreTypeArray = useParameterisedCallbacks<
-    React.ChangeEvent<{ name?: string; value: unknown }>,
-    (
-      header: string,
-      event: React.ChangeEvent<{ name?: string; value: unknown }>
-    ) => any
+    React.ChangeEvent<{ name?: string; value: unknown }>
   >(
     Object.keys(localWeightings),
     (header, event) => {
@@ -106,6 +113,34 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
           type: parseInt(value as string, 10) as ScoreType
         }
       }));
+    },
+    []
+  );
+
+  const handleSliderChange = useParameterisedCallbacks<React.ChangeEvent<any>>(
+    ["top", "above"],
+    (header, event, value) => {
+      const [top, above] =
+        header === "top"
+          ? [parseFloat(value), null]
+          : [null, parseFloat(value)];
+      setShowTop(top);
+      setShowAbove(above);
+    },
+    []
+  );
+
+  const handleInputChange = useParameterisedCallbacks<
+    React.ChangeEvent<HTMLInputElement>
+  >(
+    ["top", "above"],
+    (header, event) => {
+      const [top, above] =
+        header === "top"
+          ? [parseFloat(event.currentTarget.value), null]
+          : [null, parseFloat(event.currentTarget.value)];
+      setShowTop(top);
+      setShowAbove(above);
     },
     []
   );
@@ -156,6 +191,67 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
               </div>
             );
           })}
+          <Divider />
+          <Typography id="top-slider" gutterBottom>
+            Show top
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs>
+              <Slider
+                value={typeof showTop === "number" ? showTop : 0}
+                onChange={handleSliderChange.get("top")}
+                aria-labelledby="top-slider"
+                min={0}
+                step={25}
+                max={5000}
+              />
+            </Grid>
+            <Grid item>
+              <Input
+                className={classes.sliderInput}
+                value={typeof showTop === "number" ? showTop : 0}
+                margin="dense"
+                onChange={handleInputChange.get("top")}
+                inputProps={{
+                  step: 25,
+                  min: 0,
+                  max: 5000,
+                  type: "number",
+                  "aria-labelledby": "top-slider"
+                }}
+              />
+            </Grid>
+          </Grid>
+          <Typography id="above-slider" gutterBottom>
+            Show above
+          </Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs>
+              <Slider
+                value={typeof showAbove === "number" ? showAbove : 0}
+                onChange={handleSliderChange.get("above")}
+                aria-labelledby="above-slider"
+                min={0}
+                max={1}
+                step={0.01}
+              />
+            </Grid>
+            <Grid item>
+              <Input
+                className={classes.sliderInput}
+                value={typeof showAbove === "number" ? showAbove : 0}
+                margin="dense"
+                onChange={handleInputChange.get("above")}
+                inputProps={{
+                  step: 0.01,
+                  min: 0.0,
+                  max: 1.0,
+                  type: "number",
+                  "aria-labelledby": "above-slider"
+                }}
+              />
+            </Grid>
+          </Grid>
         </div>
       </SwipeableDrawer>
     </React.Fragment>

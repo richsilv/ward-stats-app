@@ -126,3 +126,5 @@ export enum ScoreType {
 }
 
 export type ConvertedGeoJSONData = Map<string, Feature<Polygon, IWardData>>;
+
+export type StatePair<T> = [T, (t: T) => void];

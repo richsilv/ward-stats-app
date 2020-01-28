@@ -79,6 +79,12 @@ function App() {
     "weightings",
     null
   );
+  const showTopState = useLocallyStoredState<number | null>("showTop", null);
+  const showAboveState = useLocallyStoredState<number | null>(
+    "showAbove",
+    null
+  );
+
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
     ApiResponse<Array<IData>>
   >(ApiResponse.preload<Array<IData>>());
@@ -174,6 +180,8 @@ function App() {
               selectedWard={selectedWard}
               setSelectedWard={setSelectedWard}
               setWeightings={setWeightings}
+              showTopState={showTopState}
+              showAboveState={showAboveState}
             />
           ) : sheetDataResponse.isLoading() ||
             geoJsonDataResponse.isLoading() ? (

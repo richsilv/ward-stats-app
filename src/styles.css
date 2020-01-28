@@ -56,3 +56,7 @@ body {
 .weightings.is-open {
   transform: translateY(0);
 }
+
+.leaflet-search-wrap .search-control-icon-button {
+  align-items: center;
+}

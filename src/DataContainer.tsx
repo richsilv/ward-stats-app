@@ -3,18 +3,24 @@ import * as React from "react";
 import { MapContainer } from "./MapContainer";
 import { WardDetails } from "./WardDetails";
 import { WeightingsEditor } from "./WeightingsEditor";
-import { Ward, IWeightings, IData } from "./types";
-import { useDebounce } from "./hooks";
+import { Ward, IWeightings, IData, StatePair } from "./types";
 import { WARD_CODE_FIELD, QUANTUM } from "./constants";
 import { calculateScore } from "./utils";
+import { TopWards } from "./TopWards";
+
+import Worker from "worker-loader!./worker";
+
+const worker = new Worker();
 
 interface IDataContainerProps {
-  sheetData: Array<IData>;
-  geoJsonData: Map<string, Ward>;
-  weightings: IWeightings;
-  selectedWard: Ward | null;
-  setSelectedWard: (ward: Ward | null) => void;
-  setWeightings: (weightings: IWeightings) => void;
+  readonly sheetData: Array<IData>;
+  readonly geoJsonData: Map<string, Ward>;
+  readonly weightings: IWeightings;
+  readonly selectedWard: Ward | null;
+  readonly setSelectedWard: (ward: Ward | null) => void;
+  readonly setWeightings: (weightings: IWeightings) => void;
+  readonly showTopState: StatePair<number | null>;
+  readonly showAboveState: StatePair<number | null>;
 }
 
 export const DataContainer: React.FC<IDataContainerProps> = ({
@@ -23,20 +29,32 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
   weightings,
   selectedWard,
   setSelectedWard,
-  setWeightings
+  setWeightings,
+  showTopState,
+  showAboveState
 }) => {
-  const geoJsonToRender = React.useMemo(() => {
+  const geoJsonMap = React.useMemo(() => {
     if (!sheetData || !geoJsonData) return null;
-    const features: Array<Ward> = sheetData.map(data => {
-      const wardCode = data[WARD_CODE_FIELD] as string;
-      const feature = geoJsonData.get(wardCode);
-      return {
-        ...feature!,
-        properties: { ...feature!.properties, ...data }
-      };
-    });
+    const features: Map<string, Ward> = new Map(
+      sheetData.map((data): [string, Ward] => {
+        const wardCode = data[WARD_CODE_FIELD] as string;
+        const feature = geoJsonData.get(wardCode);
+        return [
+          wardCode,
+          {
+            ...feature!,
+            properties: { ...feature!.properties, ...data }
+          }
+        ];
+      })
+    );
     return features;
   }, [sheetData, geoJsonData]);
+
+  const geoJsonToRender = React.useMemo(
+    () => (geoJsonMap ? Array.from(geoJsonMap.values()) : []),
+    [geoJsonMap]
+  );
 
   const { minScore, scoreRange } = React.useMemo(() => {
     if (!geoJsonToRender) return { minScore: 0, scoreRange: QUANTUM };
@@ -87,10 +105,12 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
       <MapContainer
         weightings={weightings}
         selectedWard={selectedWard}
-        minScore={minScore}
-        scoreRange={scoreRange}
+        rankings={rankings}
+        noScores={scoreRange === QUANTUM}
         geoJsonToRender={geoJsonToRender}
         setSelectedWard={setSelectedWard}
+        showTop={showTopState[0]}
+        showAbove={showAboveState[0]}
       />
       <WardDetails
         selectedWard={selectedWard}
@@ -99,7 +119,17 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         rank={rank}
         total={sheetData.length}
       />
-      <WeightingsEditor weightings={weightings} setWeightings={setWeightings} />
+      <WeightingsEditor
+        weightings={weightings}
+        setWeightings={setWeightings}
+        showTopState={showTopState}
+        showAboveState={showAboveState}
+      />
+      <TopWards
+        rankings={rankings}
+        geoJsonData={geoJsonMap}
+        setSelectedWard={setSelectedWard}
+      />
     </div>
   );
 };
