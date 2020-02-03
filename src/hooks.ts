@@ -350,7 +350,10 @@ export function useWorkerComputation<T>(
   React.useEffect(() => {
     worker.addEventListener("message", callback);
     worker.postMessage({ name, data });
-  }, [callback]);
+    return () => {
+      worker.removeEventListener("message", callback);
+    };
+  }, [callback, setValue]);
 
   return value;
 }

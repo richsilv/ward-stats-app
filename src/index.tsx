@@ -75,6 +75,7 @@ function setWrappedState<T>(
 function App() {
   const classes = useStyles();
 
+  const mapRef = React.useRef();
   const [weightings, setWeightings] = useLocallyStoredState<IWeightings | null>(
     "weightings",
     null
@@ -174,6 +175,7 @@ function App() {
           />
           {sheetData && geoJsonData && weightings ? (
             <DataContainer
+              mapRef={mapRef}
               sheetData={sheetData}
               geoJsonData={geoJsonData}
               weightings={weightings}

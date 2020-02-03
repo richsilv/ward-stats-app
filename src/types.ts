@@ -95,7 +95,6 @@ export class ApiResponse<T> {
     return new ApiResponse<U>(this.value);
   }
 }
-(window as any).ApiResponse = ApiResponse;
 
 export type SheetData = Array<Array<number | string>>;
 

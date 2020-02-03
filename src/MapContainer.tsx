@@ -10,13 +10,30 @@ import {
 import { LeafletEvent } from "leaflet";
 import { WARD_CODE_FIELD } from "./constants";
 import { useDebouncedCallback } from "./hooks";
-import { useTheme } from "@material-ui/core";
+import {
+  useTheme,
+  CircularProgress,
+  Backdrop,
+  makeStyles,
+  Theme,
+  createStyles
+} from "@material-ui/core";
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    backdrop: {
+      zIndex: theme.zIndex.drawer + 1,
+      color: "#fff"
+    }
+  })
+);
 
 interface MapContainerProps {
+  readonly mapRef: React.MutableRefObject<any>;
   readonly weightings: IWeightings;
   readonly selectedWard: Ward | null;
   readonly noScores: boolean;
-  readonly rankings: Map<string, { score: number; rank: number }>;
+  readonly rankings: Map<string, { score: number; rank: number }> | null;
   readonly geoJsonToRender: Array<Ward> | null;
   readonly showTop: number | null;
   readonly showAbove: number | null;
@@ -24,6 +41,7 @@ interface MapContainerProps {
 }
 
 export const MapContainer: React.FC<MapContainerProps> = ({
+  mapRef,
   weightings,
   noScores,
   rankings,
@@ -34,6 +52,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   setSelectedWard
 }) => {
   const theme = useTheme();
+  const classes = useStyles();
   const [zoom, setZoom] = React.useState(8);
 
   const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
@@ -45,7 +64,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   const styleFeatures = useDebouncedCallback(
     (feature?: GeoJSON.Feature) => {
-      if (!feature || !feature.properties) {
+      if (!rankings || !feature || !feature.properties) {
         return {};
       }
       const { properties } = feature;
@@ -90,25 +109,34 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   }, []);
 
   return (
-    <LeafletMap
-      zoom={zoom}
-      center={[53.0, -1.75]}
-      onZoom={onZoom}
-      zoomAnimation={false}
-      zoomSnap={0}
-      preferCanvas={true}
-    >
-      <TileLayer
-        attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {geoJsonToRender ? (
-        <LeafletGeoJSON
-          data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
-          style={styleFeatures}
-          onClick={onClick}
+    <React.Fragment>
+      <LeafletMap
+        ref={mapRef}
+        zoom={zoom}
+        center={[53.0, -1.75]}
+        onZoom={onZoom}
+        zoomAnimation={false}
+        zoomSnap={0}
+        preferCanvas={true}
+      >
+        <TileLayer
+          attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-      ) : null}
-    </LeafletMap>
+        {geoJsonToRender ? (
+          <LeafletGeoJSON
+            data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
+            style={styleFeatures}
+            onClick={onClick}
+          />
+        ) : null}
+      </LeafletMap>
+      <Backdrop
+        className={classes.backdrop}
+        open={!geoJsonToRender || !rankings}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    </React.Fragment>
   );
 };
