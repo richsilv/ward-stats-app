@@ -1,19 +1,31 @@
 import * as React from "react";
 import { Ward } from "./types";
+import { FixedSizeList, ListChildComponentProps } from "react-window";
 import {
   SwipeableDrawer,
   makeStyles,
   Theme,
   createStyles,
   Fab,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody
+  TableCell
 } from "@material-ui/core";
 import { ListAlt, Close } from "@material-ui/icons";
 import { WARD_CODE_FIELD, WARD_NAME_FIELD } from "./constants";
+
+const ROW_HEIGHT = 35;
+
+const Cell: React.FC<{ width: number }> = ({ width, children }) => (
+  <TableCell
+    component="div"
+    style={{
+      flexBasis: width,
+      flexGrow: 1,
+      flexShrink: 0
+    }}
+  >
+    {children}
+  </TableCell>
+);
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -30,6 +42,14 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     table: {
       marginTop: theme.spacing(10)
+    },
+    tableHead: {
+      display: "flex",
+      width: "100%"
+    },
+    tableRow: {
+      display: "flex",
+      width: "100%"
     }
   })
 );
@@ -40,6 +60,7 @@ interface IWardWithScore extends Ward {
 }
 
 interface ITopWardsProps {
+  readonly mapRef: React.MutableRefObject<any>;
   readonly rankings: Map<string, { score: number; rank: number }>;
   readonly geoJsonData: Map<string, Ward> | null;
   readonly setSelectedWard: (ward: Ward | null) => void;
@@ -48,6 +69,7 @@ interface ITopWardsProps {
 export const TopWards: React.FC<ITopWardsProps> = ({
   rankings,
   geoJsonData,
+  mapRef,
   setSelectedWard
 }) => {
   const classes = useStyles();
@@ -70,6 +92,14 @@ export const TopWards: React.FC<ITopWardsProps> = ({
   const onClickToggle = React.useCallback(() => {
     setIsOpen(currentIsOpen => !currentIsOpen);
   }, []);
+
+  const zoomToWardFactory = React.useCallback(
+    (ward: Ward) => () => {
+      setSelectedWard(ward);
+      setIsOpen(false);
+    },
+    [setSelectedWard, setIsOpen]
+  );
 
   return (
     <React.Fragment>
@@ -95,36 +125,38 @@ export const TopWards: React.FC<ITopWardsProps> = ({
         >
           <Close />
         </Fab>
-        <Table
-          className={classes.table}
-          size="small"
-          aria-label="a dense table"
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>Rank</TableCell>
-              <TableCell>Ward Name</TableCell>
-              <TableCell>Local Authority</TableCell>
-              <TableCell>Region</TableCell>
-              <TableCell align="right">Score</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {topWards.slice(0, 50).map(ward => (
-              <TableRow key={ward.properties[WARD_CODE_FIELD]}>
-                <TableCell>{ward.rank}</TableCell>
-                <TableCell component="th" scope="row">
-                  {ward.properties[WARD_NAME_FIELD]}
-                </TableCell>
-                <TableCell>{ward.properties["LA Name"]}</TableCell>
-                <TableCell>{ward.properties["Region"]}</TableCell>
-                <TableCell align="right">
-                  {Math.round(ward.score * 1000) / 10}%
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <div className={classes.table}>
+          <div className={classes.tableHead}>
+            <Cell width={100}>Rank</Cell>
+            <Cell width={200}>Ward Name</Cell>
+            <Cell width={200}>Local Authority</Cell>
+            <Cell width={200}>Region</Cell>
+            <Cell width={100}>Score</Cell>
+          </div>
+          <FixedSizeList
+            height={500}
+            itemCount={topWards.length}
+            itemSize={ROW_HEIGHT}
+            width="100%"
+          >
+            {({ style, index }: ListChildComponentProps) => {
+              const ward = topWards[index];
+              return (
+                <div className={classes.tableRow} style={style}>
+                  <Cell width={100}>{ward.rank}</Cell>
+                  <Cell width={200}>
+                    <a href="#" onClick={zoomToWardFactory(ward)}>
+                      {ward.properties[WARD_NAME_FIELD]}
+                    </a>
+                  </Cell>
+                  <Cell width={200}>{ward.properties["LA Name"]}</Cell>
+                  <Cell width={200}>{ward.properties["Region"]}</Cell>
+                  <Cell width={100}>{Math.round(ward.score * 1000) / 10}%</Cell>
+                </div>
+              );
+            }}
+          </FixedSizeList>
+        </div>
       </SwipeableDrawer>
     </React.Fragment>
   );
