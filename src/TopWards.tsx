@@ -7,16 +7,26 @@ import {
   Theme,
   createStyles,
   Fab,
-  TableCell
+  TableCell,
+  Box,
+  Link
 } from "@material-ui/core";
+import * as L from "leaflet";
 import { ListAlt, Close } from "@material-ui/icons";
+
 import { WARD_CODE_FIELD, WARD_NAME_FIELD } from "./constants";
 
 const ROW_HEIGHT = 35;
 
-const Cell: React.FC<{ width: number }> = ({ width, children }) => (
+const Cell: React.FC<{ width: number; isHeader?: boolean }> = ({
+  width,
+  isHeader,
+  children
+}) => (
   <TableCell
     component="div"
+    size="small"
+    variant={isHeader ? "head" : "body"}
     style={{
       flexBasis: width,
       flexGrow: 1,
@@ -45,7 +55,9 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     tableHead: {
       display: "flex",
-      width: "100%"
+      width: "100%",
+      paddingRight: 15,
+      boxSizing: "border-box"
     },
     tableRow: {
       display: "flex",
@@ -97,6 +109,11 @@ export const TopWards: React.FC<ITopWardsProps> = ({
     (ward: Ward) => () => {
       setSelectedWard(ward);
       setIsOpen(false);
+      if (mapRef.current) {
+        mapRef.current.leafletElement.fitBounds(L.geoJSON(ward).getBounds(), {
+          maxZoom: 14
+        });
+      }
     },
     [setSelectedWard, setIsOpen]
   );
@@ -125,16 +142,26 @@ export const TopWards: React.FC<ITopWardsProps> = ({
         >
           <Close />
         </Fab>
-        <div className={classes.table}>
-          <div className={classes.tableHead}>
-            <Cell width={100}>Rank</Cell>
-            <Cell width={200}>Ward Name</Cell>
-            <Cell width={200}>Local Authority</Cell>
-            <Cell width={200}>Region</Cell>
-            <Cell width={100}>Score</Cell>
-          </div>
+        <Box className={classes.table}>
+          <Box className={classes.tableHead}>
+            <Cell isHeader width={100}>
+              Rank
+            </Cell>
+            <Cell isHeader width={200}>
+              Ward Name
+            </Cell>
+            <Cell isHeader width={200}>
+              Local Authority
+            </Cell>
+            <Cell isHeader width={200}>
+              Region
+            </Cell>
+            <Cell isHeader width={100}>
+              Score
+            </Cell>
+          </Box>
           <FixedSizeList
-            height={500}
+            height={525}
             itemCount={topWards.length}
             itemSize={ROW_HEIGHT}
             width="100%"
@@ -142,21 +169,21 @@ export const TopWards: React.FC<ITopWardsProps> = ({
             {({ style, index }: ListChildComponentProps) => {
               const ward = topWards[index];
               return (
-                <div className={classes.tableRow} style={style}>
-                  <Cell width={100}>{ward.rank}</Cell>
+                <Box className={classes.tableRow} style={style}>
+                  <Cell width={100}>{ward.rank}.</Cell>
                   <Cell width={200}>
-                    <a href="#" onClick={zoomToWardFactory(ward)}>
+                    <Link href="#" onClick={zoomToWardFactory(ward)}>
                       {ward.properties[WARD_NAME_FIELD]}
-                    </a>
+                    </Link>
                   </Cell>
                   <Cell width={200}>{ward.properties["LA Name"]}</Cell>
                   <Cell width={200}>{ward.properties["Region"]}</Cell>
                   <Cell width={100}>{Math.round(ward.score * 1000) / 10}%</Cell>
-                </div>
+                </Box>
               );
             }}
           </FixedSizeList>
-        </div>
+        </Box>
       </SwipeableDrawer>
     </React.Fragment>
   );
