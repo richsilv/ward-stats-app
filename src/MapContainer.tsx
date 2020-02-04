@@ -5,7 +5,10 @@ import { Ward, IWeightings } from "./types";
 import {
   Map as LeafletMap,
   GeoJSON as LeafletGeoJSON,
-  TileLayer
+  TileLayer,
+  FeatureGroup,
+  Circle,
+  Popup
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
 import { WARD_CODE_FIELD } from "./constants";
@@ -18,6 +21,19 @@ import {
   Theme,
   createStyles
 } from "@material-ui/core";
+
+import stationData from "./station-data.json";
+
+interface IStation {
+  readonly code: string;
+  readonly name: string;
+  readonly lat: number;
+  readonly lon: number;
+  readonly vol: number;
+  readonly ave: number;
+  readonly fast: number;
+  readonly hour: number | null;
+}
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -54,6 +70,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const theme = useTheme();
   const classes = useStyles();
   const [zoom, setZoom] = React.useState(8);
+  const [station, setStation] = React.useState<IStation>(stationData[0]);
 
   const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
     theme
@@ -108,6 +125,13 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     setSelectedWard(event.layer.feature);
   }, []);
 
+  const onClickStationFactory = React.useCallback(
+    (station: IStation) => () => {
+      setStation(station);
+    },
+    [setStation]
+  );
+
   return (
     <React.Fragment>
       <LeafletMap
@@ -129,6 +153,23 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             style={styleFeatures}
             onClick={onClick}
           />
+        ) : null}
+        {zoom >= 10 ? (
+          <FeatureGroup>
+            {stationData.map((station: IStation) => (
+              <Circle
+                onClick={onClickStationFactory(station)}
+                center={[station.lat, station.lon]}
+                radius={25 + Math.log2(station.vol) * 8}
+              />
+            ))}
+            <Popup>
+              <p>{station.name}</p>
+              <p>Fastest train: {station.fast} minutes</p>
+              <p>Average train: {station.ave} minutes</p>
+              <p>Trains per hour: {station.hour || "Few"}</p>
+            </Popup>
+          </FeatureGroup>
         ) : null}
       </LeafletMap>
       <Backdrop
