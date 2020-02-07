@@ -2,6 +2,7 @@
 import * as React from "react";
 
 import { ApiResponse, Ward } from "./types";
+import { workerPolyfill } from "./worker-polyfill";
 
 export function useSheetData({
   isSignedIn,
@@ -332,28 +333,37 @@ export function useParameterisedCallbacks<E extends React.SyntheticEvent<any>>(
   return storedCallbacks.current;
 }
 
+const DISABLE_WORKER = true;
+
 export function useWorkerComputation<T>(
   worker: Worker,
   name: string,
   ...data: Array<any>
 ) {
   const [value, setValue] = React.useState<T | null>(null);
-  const callback = React.useCallback((event: MessageEvent) => {
-    if (event.data.name === name) {
-      if (event.data.error) {
-        console.error(event.data.error);
-      } else {
-        setValue(event.data.data);
+  const callback = React.useCallback(
+    (event: MessageEvent) => {
+      if (event.data.name === name) {
+        if (event.data.error) {
+          console.error(event.data.error);
+        } else {
+          setValue(event.data.data);
+        }
       }
-    }
-  }, data);
+    },
+    [...data, setValue]
+  );
   React.useEffect(() => {
+    if (DISABLE_WORKER) {
+      const fn = (workerPolyfill as any)[name];
+      return setValue(fn(...data));
+    }
     worker.addEventListener("message", callback);
     worker.postMessage({ name, data });
     return () => {
       worker.removeEventListener("message", callback);
     };
-  }, [callback, setValue]);
+  }, [...data, callback, DISABLE_WORKER]);
 
   return value;
 }

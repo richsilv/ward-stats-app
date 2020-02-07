@@ -19,7 +19,12 @@ import {
   Backdrop,
   makeStyles,
   Theme,
-  createStyles
+  createStyles,
+  Typography,
+  TableBody,
+  Table,
+  TableRow,
+  TableCell
 } from "@material-ui/core";
 
 import stationData from "./station-data.json";
@@ -160,14 +165,32 @@ export const MapContainer: React.FC<MapContainerProps> = ({
               <Circle
                 onClick={onClickStationFactory(station)}
                 center={[station.lat, station.lon]}
-                radius={25 + Math.log2(station.vol) * 8}
+                radius={20 + Math.log2(station.vol) * 15}
+                stroke={true}
+                weight={1}
+                color="#222"
+                fill={true}
+                fillOpacity={0.75}
+                fillColor={`hsl(${120 - station.ave / 2}, 100%, 50%)`}
               />
             ))}
             <Popup>
-              <p>{station.name}</p>
-              <p>Fastest train: {station.fast} minutes</p>
-              <p>Average train: {station.ave} minutes</p>
-              <p>Trains per hour: {station.hour || "Few"}</p>
+              <Typography variant="h5">{station.name}</Typography>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell>Fastest train: {station.fast} minutes</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Average train: {station.ave} minutes</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>
+                      Trains per hour: {station.hour || "Few"}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </Popup>
           </FeatureGroup>
         ) : null}

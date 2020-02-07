@@ -8,6 +8,7 @@ import { WARD_CODE_FIELD, QUANTUM } from "./constants";
 import { TopWards } from "./TopWards";
 import { useWorkerComputation } from "./hooks";
 import { SearchBar } from "./SearchBar";
+import { RightMoveLink } from "./RightMoveLink";
 
 const worker = new Worker("./worker.ts", { type: "module" });
 let hasRun = { value: false };
@@ -92,6 +93,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         showTopState={showTopState}
         showAboveState={showAboveState}
       />
+      <RightMoveLink mapRef={mapRef} />
       {rankings ? (
         <TopWards
           rankings={rankings}

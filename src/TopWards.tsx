@@ -9,12 +9,13 @@ import {
   Fab,
   TableCell,
   Box,
-  Link
+  Link,
+  useTheme
 } from "@material-ui/core";
 import * as L from "leaflet";
 import { ListAlt, Close } from "@material-ui/icons";
 
-import { WARD_CODE_FIELD, WARD_NAME_FIELD } from "./constants";
+import { WARD_NAME_FIELD } from "./constants";
 
 const ROW_HEIGHT = 35;
 
@@ -84,7 +85,8 @@ export const TopWards: React.FC<ITopWardsProps> = ({
   mapRef,
   setSelectedWard
 }) => {
-  const classes = useStyles();
+  const theme = useTheme();
+  const classes = useStyles(theme);
   const [isOpen, setIsOpen] = React.useState(false);
 
   const topWards: Array<IWardWithScore> = React.useMemo(() => {
