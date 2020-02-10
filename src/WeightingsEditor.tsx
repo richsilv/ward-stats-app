@@ -17,16 +17,10 @@ import {
   Input,
   Divider
 } from "@material-ui/core";
-import { Edit } from "@material-ui/icons";
 import { useParameterisedCallbacks } from "./hooks";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
-    fab: {
-      position: "absolute",
-      bottom: theme.spacing(2),
-      left: theme.spacing(2)
-    },
     drawer: {
       padding: theme.spacing(2)
     },
@@ -42,13 +36,15 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface IWeightingsProps {
-  weightings: IWeightings;
-  setWeightings: (weightings: IWeightings) => void;
-  showTopState: StatePair<number | null>;
-  showAboveState: StatePair<number | null>;
+  readonly isOpen: boolean;
+  readonly weightings: IWeightings;
+  readonly showTopState: StatePair<number | null>;
+  readonly showAboveState: StatePair<number | null>;
+  readonly setWeightings: (weightings: IWeightings) => void;
 }
 
 export const WeightingsEditor: React.FC<IWeightingsProps> = ({
+  isOpen,
   weightings,
   setWeightings,
   showTopState: [showTop, setShowTop],
@@ -58,7 +54,6 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   const classes = useStyles(theme);
 
   const wasOpen = React.useRef(false);
-  const [isOpen, setIsOpen] = React.useState(false);
   const [localWeightings, setLocalWeightings] = React.useState<IWeightings>(
     weightings
   );
@@ -78,10 +73,6 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   React.useEffect(() => {
     wasOpen.current = isOpen;
   }, [isOpen, wasOpen]);
-
-  const onClickToggle = React.useCallback(() => {
-    setIsOpen(currentIsOpen => !currentIsOpen);
-  }, []);
 
   const onChangeWeightArray = useParameterisedCallbacks<
     React.ChangeEvent<HTMLInputElement>
@@ -147,113 +138,99 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
 
   return (
     <React.Fragment>
-      <Fab
-        aria-label="Edit weightings"
-        className={classes.fab}
-        color="primary"
-        onClick={onClickToggle}
-      >
-        <Edit />
-      </Fab>
-      <SwipeableDrawer
-        open={isOpen}
-        onClose={onClickToggle}
-        onOpen={onClickToggle}
-      >
-        <div className={classes.drawer}>
-          {Object.keys(localWeightings).map(header => {
-            const { weight, type } = localWeightings[header];
-            return (
-              <div className={classes.entry} key={header}>
-                <TextField
-                  label={header}
-                  value={weight || 0}
-                  inputProps={{
-                    step: 0.5,
-                    type: "number",
-                    inputMode: "numeric"
-                  }}
-                  type="number"
-                  onChange={onChangeWeightArray.get(header)}
-                />
-                <FormControl>
-                  <InputLabel>&nbsp;</InputLabel>
-                  <Select
-                    native
-                    onChange={onChangeScoreTypeArray.get(header)}
-                    value={type}
-                  >
-                    <option value={ScoreType.Value}>Value</option>
-                    <option value={ScoreType.Normalised}>Normalised</option>
-                    <option value={ScoreType.Rank}>Rank</option>
-                  </Select>
-                </FormControl>
-              </div>
-            );
-          })}
-          <Divider />
-          <Typography id="top-slider" gutterBottom>
-            Show top
-          </Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs>
-              <Slider
-                value={typeof showTop === "number" ? showTop : 0}
-                onChange={handleSliderChange.get("top")}
-                aria-labelledby="top-slider"
-                min={0}
-                step={25}
-                max={5000}
-              />
-            </Grid>
-            <Grid item>
-              <Input
-                className={classes.sliderInput}
-                value={typeof showTop === "number" ? showTop : 0}
-                margin="dense"
-                onChange={handleInputChange.get("top")}
+      <div className={classes.drawer}>
+        {Object.keys(localWeightings).map(header => {
+          const { weight, type } = localWeightings[header];
+          return (
+            <div className={classes.entry} key={header}>
+              <TextField
+                label={header}
+                value={weight || 0}
                 inputProps={{
-                  step: 25,
-                  min: 0,
-                  max: 5000,
+                  step: 0.5,
                   type: "number",
-                  "aria-labelledby": "top-slider"
+                  inputMode: "numeric"
                 }}
+                type="number"
+                onChange={onChangeWeightArray.get(header)}
               />
-            </Grid>
+              <FormControl>
+                <InputLabel>&nbsp;</InputLabel>
+                <Select
+                  native
+                  onChange={onChangeScoreTypeArray.get(header)}
+                  value={type}
+                >
+                  <option value={ScoreType.Value}>Value</option>
+                  <option value={ScoreType.Normalised}>Normalised</option>
+                  <option value={ScoreType.Rank}>Rank</option>
+                </Select>
+              </FormControl>
+            </div>
+          );
+        })}
+        <Divider />
+        <Typography id="top-slider" gutterBottom>
+          Show top
+        </Typography>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs>
+            <Slider
+              value={typeof showTop === "number" ? showTop : 0}
+              onChange={handleSliderChange.get("top")}
+              aria-labelledby="top-slider"
+              min={0}
+              step={25}
+              max={5000}
+            />
           </Grid>
-          <Typography id="above-slider" gutterBottom>
-            Show above
-          </Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs>
-              <Slider
-                value={typeof showAbove === "number" ? showAbove : 0}
-                onChange={handleSliderChange.get("above")}
-                aria-labelledby="above-slider"
-                min={0}
-                max={1}
-                step={0.01}
-              />
-            </Grid>
-            <Grid item>
-              <Input
-                className={classes.sliderInput}
-                value={typeof showAbove === "number" ? showAbove : 0}
-                margin="dense"
-                onChange={handleInputChange.get("above")}
-                inputProps={{
-                  step: 0.01,
-                  min: 0.0,
-                  max: 1.0,
-                  type: "number",
-                  "aria-labelledby": "above-slider"
-                }}
-              />
-            </Grid>
+          <Grid item>
+            <Input
+              className={classes.sliderInput}
+              value={typeof showTop === "number" ? showTop : 0}
+              margin="dense"
+              onChange={handleInputChange.get("top")}
+              inputProps={{
+                step: 25,
+                min: 0,
+                max: 5000,
+                type: "number",
+                "aria-labelledby": "top-slider"
+              }}
+            />
           </Grid>
-        </div>
-      </SwipeableDrawer>
+        </Grid>
+        <Typography id="above-slider" gutterBottom>
+          Show above
+        </Typography>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs>
+            <Slider
+              value={typeof showAbove === "number" ? showAbove : 0}
+              onChange={handleSliderChange.get("above")}
+              aria-labelledby="above-slider"
+              min={0}
+              max={1}
+              step={0.01}
+            />
+          </Grid>
+          <Grid item>
+            <Input
+              className={classes.sliderInput}
+              value={typeof showAbove === "number" ? showAbove : 0}
+              margin="dense"
+              onChange={handleInputChange.get("above")}
+              inputProps={{
+                step: 0.01,
+                min: 0.0,
+                max: 1.0,
+                type: "number",
+                "aria-labelledby": "above-slider"
+              }}
+            />
+          </Grid>
+        </Grid>
+      </div>
     </React.Fragment>
   );
 };

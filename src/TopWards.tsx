@@ -74,119 +74,101 @@ interface IWardWithScore extends Ward {
 
 interface ITopWardsProps {
   readonly mapRef: React.MutableRefObject<any>;
-  readonly rankings: Map<string, { score: number; rank: number }>;
-  readonly geoJsonData: Map<string, Ward> | null;
+  readonly rankings: Map<string, { score: number; rank: number }> | null;
+  readonly geoJsonMap: Map<string, Ward> | null;
   readonly setSelectedWard: (ward: Ward | null) => void;
+  readonly toggleOpen: () => void;
 }
 
 export const TopWards: React.FC<ITopWardsProps> = ({
   rankings,
-  geoJsonData,
+  geoJsonMap,
   mapRef,
-  setSelectedWard
+  setSelectedWard,
+  toggleOpen
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
-  const [isOpen, setIsOpen] = React.useState(false);
 
   const topWards: Array<IWardWithScore> = React.useMemo(() => {
-    if (!geoJsonData) return [];
+    if (!geoJsonMap) return [];
 
-    const sortedRankings = Array.from(rankings.entries()).sort(
+    const sortedRankings = Array.from(rankings ? rankings.entries() : []).sort(
       ([_, { rank: rankA }], [__, { rank: rankB }]) => {
         return rankA - rankB;
       }
     );
     return sortedRankings.map(([wardCode, { score, rank }]) => {
-      const thisWard = geoJsonData.get(wardCode);
+      const thisWard = geoJsonMap.get(wardCode);
       return { ...thisWard!, score, rank };
     });
-  }, [rankings, geoJsonData]);
-
-  const onClickToggle = React.useCallback(() => {
-    setIsOpen(currentIsOpen => !currentIsOpen);
-  }, []);
+  }, [rankings, geoJsonMap]);
 
   const zoomToWardFactory = React.useCallback(
     (ward: Ward) => () => {
       setSelectedWard(ward);
-      setIsOpen(false);
+      toggleOpen();
       if (mapRef.current) {
         mapRef.current.leafletElement.fitBounds(L.geoJSON(ward).getBounds(), {
           maxZoom: 14
         });
       }
     },
-    [setSelectedWard, setIsOpen]
+    [setSelectedWard, toggleOpen]
   );
 
   return (
     <React.Fragment>
       <Fab
-        aria-label="View top wards"
-        className={`${classes.fab} ${classes.fabPushed}`}
-        color="primary"
-        onClick={onClickToggle}
+        aria-label="Close top wards"
+        className={classes.fab}
+        color="default"
+        onClick={toggleOpen}
       >
-        <ListAlt />
+        <Close />
       </Fab>
-      <SwipeableDrawer
-        anchor="top"
-        open={isOpen}
-        onClose={onClickToggle}
-        onOpen={onClickToggle}
-      >
-        <Fab
-          aria-label="Close top wards"
-          className={classes.fab}
-          color="default"
-          onClick={onClickToggle}
-        >
-          <Close />
-        </Fab>
-        <Box className={classes.table}>
-          <Box className={classes.tableHead}>
-            <Cell isHeader width={100}>
-              Rank
-            </Cell>
-            <Cell isHeader width={200}>
-              Ward Name
-            </Cell>
-            <Cell isHeader width={200}>
-              Local Authority
-            </Cell>
-            <Cell isHeader width={200}>
-              Region
-            </Cell>
-            <Cell isHeader width={100}>
-              Score
-            </Cell>
-          </Box>
-          <FixedSizeList
-            height={525}
-            itemCount={topWards.length}
-            itemSize={ROW_HEIGHT}
-            width="100%"
-          >
-            {({ style, index }: ListChildComponentProps) => {
-              const ward = topWards[index];
-              return (
-                <Box className={classes.tableRow} style={style}>
-                  <Cell width={100}>{ward.rank}.</Cell>
-                  <Cell width={200}>
-                    <Link href="#" onClick={zoomToWardFactory(ward)}>
-                      {ward.properties[WARD_NAME_FIELD]}
-                    </Link>
-                  </Cell>
-                  <Cell width={200}>{ward.properties["LA Name"]}</Cell>
-                  <Cell width={200}>{ward.properties["Region"]}</Cell>
-                  <Cell width={100}>{Math.round(ward.score * 1000) / 10}%</Cell>
-                </Box>
-              );
-            }}
-          </FixedSizeList>
+      <Box className={classes.table}>
+        <Box className={classes.tableHead}>
+          <Cell isHeader width={100}>
+            Rank
+          </Cell>
+          <Cell isHeader width={200}>
+            Ward Name
+          </Cell>
+          <Cell isHeader width={200}>
+            Local Authority
+          </Cell>
+          <Cell isHeader width={200}>
+            Region
+          </Cell>
+          <Cell isHeader width={100}>
+            Score
+          </Cell>
         </Box>
-      </SwipeableDrawer>
+        <FixedSizeList
+          height={525}
+          itemCount={topWards.length}
+          itemSize={ROW_HEIGHT}
+          width="100%"
+        >
+          {({ style, index }: ListChildComponentProps) => {
+            const ward = topWards[index];
+            return (
+              <Box className={classes.tableRow} style={style}>
+                <Cell width={100}>{ward.rank}.</Cell>
+                <Cell width={200}>
+                  <Link href="#" onClick={zoomToWardFactory(ward)}>
+                    {ward.properties[WARD_NAME_FIELD]}
+                  </Link>
+                </Cell>
+                <Cell width={200}>{ward.properties["LA Name"]}</Cell>
+                <Cell width={200}>{ward.properties["Region"]}</Cell>
+                <Cell width={100}>{Math.round(ward.score * 1000) / 10}%</Cell>
+              </Box>
+            );
+          }}
+        </FixedSizeList>
+      </Box>
     </React.Fragment>
   );
 };

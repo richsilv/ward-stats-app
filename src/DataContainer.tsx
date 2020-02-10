@@ -9,6 +9,7 @@ import { TopWards } from "./TopWards";
 import { useWorkerComputation } from "./hooks";
 import { SearchBar } from "./SearchBar";
 import { RightMoveLink } from "./RightMoveLink";
+import { ActionsMenu } from "./ActionsMenu";
 
 const worker = new Worker("./worker.ts", { type: "module" });
 let hasRun = { value: false };
@@ -87,21 +88,16 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
           total={sheetData.length}
         />
       ) : null}
-      <WeightingsEditor
+      <ActionsMenu
+        rankings={rankings}
+        geoJsonMap={geoJsonMap}
+        mapRef={mapRef}
+        setSelectedWard={setSelectedWard}
         weightings={weightings}
         setWeightings={setWeightings}
         showTopState={showTopState}
         showAboveState={showAboveState}
       />
-      <RightMoveLink mapRef={mapRef} />
-      {rankings ? (
-        <TopWards
-          rankings={rankings}
-          geoJsonData={geoJsonMap}
-          mapRef={mapRef}
-          setSelectedWard={setSelectedWard}
-        />
-      ) : null}
       <SearchBar mapRef={mapRef} />
     </div>
   );

@@ -3,6 +3,7 @@ import * as React from "react";
 
 import { ApiResponse, Ward } from "./types";
 import { workerPolyfill } from "./worker-polyfill";
+import { Fab, SwipeableDrawer } from "@material-ui/core";
 
 export function useSheetData({
   isSignedIn,
@@ -366,4 +367,50 @@ export function useWorkerComputation<T>(
   }, [...data, callback, DISABLE_WORKER]);
 
   return value;
+}
+
+export function useDrawerToggle({
+  icon,
+  anchor,
+  Contents,
+  callbacks = {}
+}: {
+  icon: JSX.Element;
+  anchor: "left" | "right" | "top" | "bottom";
+  Contents: React.FC<{
+    isOpen: boolean;
+    toggleOpen: () => void;
+  }>;
+  callbacks: {
+    onToggle?: () => void;
+    onOpen?: () => void;
+    onClose?: () => void;
+  };
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const toggleOpen = React.useCallback(() => {
+    callbacks.onToggle && callbacks.onToggle();
+    setIsOpen(_isOpen => !_isOpen);
+  }, [setIsOpen, callbacks]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      callbacks.onOpen && callbacks.onOpen();
+    } else {
+      callbacks.onClose && callbacks.onClose();
+    }
+  }, [isOpen]);
+
+  return [
+    <Fab onClick={toggleOpen}>{icon}</Fab>,
+    <SwipeableDrawer
+      anchor={anchor}
+      open={isOpen}
+      onOpen={toggleOpen}
+      onClose={toggleOpen}
+    >
+      <Contents isOpen={isOpen} toggleOpen={toggleOpen} />
+    </SwipeableDrawer>,
+    toggleOpen
+  ];
 }

@@ -11,28 +11,25 @@ import { House } from "@material-ui/icons";
 
 import geojsonPolyline from "polyline";
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    fab: {
-      position: "absolute",
-      top: theme.spacing(2),
-      left: theme.spacing(15)
-    }
-  })
-);
+const useStyles = makeStyles((theme: Theme) => createStyles({}));
 
 interface IRightMoveLinkProps {
   readonly mapRef: React.MutableRefObject<any>;
+  readonly onClick: () => void;
 }
 
-export const RightMoveLink: React.FC<IRightMoveLinkProps> = ({ mapRef }) => {
+export const RightMoveLink: React.FC<IRightMoveLinkProps> = ({
+  mapRef,
+  onClick
+}) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const onClick = React.useCallback(() => {
+  const onClickIcon = React.useCallback(() => {
     if (!mapRef.current) {
       return;
     }
+    onClick();
     const bounds: L.LatLngBounds = mapRef.current.leafletElement.getBounds();
     const north = bounds.getNorth();
     const south = bounds.getSouth();
@@ -49,15 +46,10 @@ export const RightMoveLink: React.FC<IRightMoveLinkProps> = ({ mapRef }) => {
     window.open(
       `https://www.rightmove.co.uk/property-for-sale/map.html?locationIdentifier=USERDEFINEDAREA%5E%7B%22polylines%22%3A%22${encoded}%22%7D`
     );
-  }, [mapRef]);
+  }, [mapRef, onClick]);
 
   return (
-    <Fab
-      aria-label="Edit weightings"
-      className={classes.fab}
-      color="secondary"
-      onClick={onClick}
-    >
+    <Fab aria-label="Edit weightings" color="secondary" onClick={onClickIcon}>
       <House />
     </Fab>
   );

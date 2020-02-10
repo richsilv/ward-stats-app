@@ -1,4 +1,5 @@
 import * as React from "react";
+import * as L from "leaflet";
 import Color from "color";
 
 import { Ward, IWeightings } from "./types";
@@ -12,7 +13,7 @@ import {
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
 import { WARD_CODE_FIELD } from "./constants";
-import { useDebouncedCallback } from "./hooks";
+import { useDebouncedCallback, useLocallyStoredState } from "./hooks";
 import {
   useTheme,
   CircularProgress,
@@ -74,7 +75,11 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 }) => {
   const theme = useTheme();
   const classes = useStyles();
-  const [zoom, setZoom] = React.useState(8);
+  const [zoom, setZoom] = useLocallyStoredState("zoom", 8);
+  const [center, setCenter] = useLocallyStoredState(
+    "center",
+    new L.LatLng(53.0, -1.75)
+  );
   const [station, setStation] = React.useState<IStation>(stationData[0]);
 
   const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
@@ -84,7 +89,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     theme
   ]);
 
-  const styleFeatures = useDebouncedCallback(
+  const styleFeatures = React.useCallback(
     (feature?: GeoJSON.Feature) => {
       if (!rankings || !feature || !feature.properties) {
         return {};
@@ -117,13 +122,15 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         fillColor: badColor.mix(goodColor, score).string()
       };
     },
-    [zoom, weightings, rankings, selectedWard, showTop, showAbove],
-    250,
-    1000
+    [zoom, weightings, rankings, selectedWard, showTop, showAbove]
   );
 
   const onZoom = React.useCallback((event: LeafletEvent) => {
     setZoom(event.target.getZoom());
+  }, []);
+
+  const onMove = React.useCallback((event: LeafletEvent) => {
+    setCenter(event.target.getCenter());
   }, []);
 
   const onClick = React.useCallback((event: LeafletEvent) => {
@@ -142,17 +149,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       <LeafletMap
         ref={mapRef}
         zoom={zoom}
-        center={[53.0, -1.75]}
+        center={center}
         onZoom={onZoom}
-        zoomAnimation={false}
-        zoomSnap={0}
-        preferCanvas={true}
+        onMove={onMove}
+        preferCanvas
       >
         <TileLayer
           attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geoJsonToRender ? (
+        {geoJsonToRender && rankings ? (
           <LeafletGeoJSON
             data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
             style={styleFeatures}
