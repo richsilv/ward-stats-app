@@ -65,7 +65,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   }, [isOpen, wasOpen, weightings]);
 
   React.useEffect(() => {
-    if (wasOpen && !isOpen) {
+    if (wasOpen.current && !isOpen) {
       setWeightings(localWeightings);
     }
   }, [isOpen, wasOpen, localWeightings]);

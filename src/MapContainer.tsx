@@ -13,7 +13,11 @@ import {
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
 import { WARD_CODE_FIELD } from "./constants";
-import { useDebouncedCallback, useLocallyStoredState } from "./hooks";
+import {
+  useDebouncedCallback,
+  useLocallyStoredState,
+  useParameterisedCallbacks
+} from "./hooks";
 import {
   useTheme,
   CircularProgress,
@@ -107,8 +111,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
       if ((showTop && showTop < rank) || (showAbove && score < showAbove)) {
         return {
-          opacity: isSelected ? 0.6 : 0,
-          fill: false
+          opacity: isSelected ? 0.6 : 0.1,
+          fillColor: "transparent"
         };
       }
 
@@ -137,11 +141,20 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     setSelectedWard(event.layer.feature);
   }, []);
 
-  const onClickStationFactory = React.useCallback(
-    (station: IStation) => () => {
-      setStation(station);
+  const onClickStationArray = useParameterisedCallbacks(
+    stationData.map(station => station.code),
+    (stationCode: string) => {
+      const station = stationData.find(({ code }) => code === stationCode);
+      if (station) {
+        setStation(station);
+      }
     },
-    [setStation]
+    [stationData, setStation]
+  );
+
+  const sendToBack = React.useCallback(
+    (element: any) => element.leafletElement.bringToBack(),
+    []
   );
 
   return (
@@ -152,7 +165,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         center={center}
         onZoom={onZoom}
         onMove={onMove}
-        preferCanvas
       >
         <TileLayer
           attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
@@ -160,6 +172,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         />
         {geoJsonToRender && rankings ? (
           <LeafletGeoJSON
+            ref={sendToBack}
             data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
             style={styleFeatures}
             onClick={onClick}
@@ -169,7 +182,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           <FeatureGroup>
             {stationData.map((station: IStation) => (
               <Circle
-                onClick={onClickStationFactory(station)}
+                key={station.code}
+                onClick={onClickStationArray.get(station.code)}
                 center={[station.lat, station.lon]}
                 radius={20 + Math.log2(station.vol) * 15}
                 stroke={true}
@@ -178,6 +192,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
                 fill={true}
                 fillOpacity={0.75}
                 fillColor={`hsl(${120 - station.ave / 2}, 100%, 50%)`}
+                className={`station station-${station.code}`}
               />
             ))}
             <Popup>

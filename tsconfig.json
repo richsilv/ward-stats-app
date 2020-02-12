@@ -4,7 +4,7 @@
     "lib": ["dom", "es2016", "WebWorker"],
     "jsx": "preserve",
     "module": "esnext",
-    "target": "es5",
+    "target": "ES6",
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
