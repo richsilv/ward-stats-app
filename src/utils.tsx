@@ -1,4 +1,4 @@
-import { IData, IWeightings, ScoreType } from "./types";
+import { IData, IWeightings, ScoreType, MapRef } from "./types";
 import {
   NON_COMPARISON_FIELDS,
   NORMALISED_EXTENSION,
@@ -94,4 +94,17 @@ export function calculateScore(weightings: IWeightings, properties: IData) {
     const value = (properties![headerName] as number) || 0;
     return scoreSoFar + weight * value;
   }, 0);
+}
+
+export function filterByBounds<T extends { lat: number; lon: number }>(
+  items: Array<T>,
+  mapRef: MapRef
+) {
+  if (!mapRef.current) {
+    return [];
+  }
+  const bounds = mapRef.current.leafletElement.getBounds();
+  return items.filter(({ lat, lon }) => {
+    return bounds.contains([lat, lon]);
+  });
 }

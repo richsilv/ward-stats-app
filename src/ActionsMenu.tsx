@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Ward, IWeightings, StatePair } from "./types";
+import { Ward, IWeightings, StatePair, MapRef } from "./types";
 import {
   SwipeableDrawer,
   makeStyles,
@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface IActionsMenuProps {
-  readonly mapRef: React.MutableRefObject<any>;
+  readonly mapRef: MapRef;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
   readonly geoJsonMap: Map<string, Ward> | null;
   readonly weightings: IWeightings;

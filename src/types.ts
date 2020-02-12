@@ -1,4 +1,7 @@
 import { Feature, Polygon } from "geojson";
+import { Map as LeafletMap } from "leaflet";
+import { Map as ReactLeafletMap } from "react-leaflet";
+
 import { WARD_CODE_FIELD, WARD_NAME_FIELD } from "./constants";
 
 export type ApiResponseValue<T> =
@@ -127,3 +130,10 @@ export enum ScoreType {
 export type ConvertedGeoJSONData = Map<string, Feature<Polygon, IWardData>>;
 
 export type StatePair<T> = [T, (t: T) => void];
+
+export type MapRef = React.MutableRefObject<
+  ReactLeafletMap<any, LeafletMap> | undefined
+>;
+export type DefinedMapRef = React.MutableRefObject<
+  ReactLeafletMap<any, LeafletMap>
+>;

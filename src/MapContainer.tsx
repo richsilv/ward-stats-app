@@ -2,7 +2,7 @@ import * as React from "react";
 import * as L from "leaflet";
 import Color from "color";
 
-import { Ward, IWeightings } from "./types";
+import { Ward, IWeightings, MapRef, DefinedMapRef } from "./types";
 import {
   Map as LeafletMap,
   GeoJSON as LeafletGeoJSON,
@@ -33,6 +33,7 @@ import {
 } from "@material-ui/core";
 
 import stationData from "./station-data.json";
+import { filterByBounds } from "./utils";
 
 interface IStation {
   readonly code: string;
@@ -55,7 +56,7 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface MapContainerProps {
-  readonly mapRef: React.MutableRefObject<any>;
+  readonly mapRef: MapRef;
   readonly weightings: IWeightings;
   readonly selectedWard: Ward | null;
   readonly noScores: boolean;
@@ -92,6 +93,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   const badColor = React.useMemo(() => Color(theme.palette.error.main), [
     theme
   ]);
+
+  const stationsToRender = React.useMemo(() => {
+    return filterByBounds(stationData, mapRef);
+  }, [stationData, mapRef, zoom, center]);
 
   const styleFeatures = React.useCallback(
     (feature?: GeoJSON.Feature) => {
@@ -160,7 +165,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   return (
     <React.Fragment>
       <LeafletMap
-        ref={mapRef}
+        ref={mapRef as DefinedMapRef}
         zoom={zoom}
         center={center}
         onZoom={onZoom}
@@ -180,7 +185,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         ) : null}
         {zoom >= 10 ? (
           <FeatureGroup>
-            {stationData.map((station: IStation) => (
+            {stationsToRender.map((station: IStation) => (
               <Circle
                 key={station.code}
                 onClick={onClickStationArray.get(station.code)}

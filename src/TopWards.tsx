@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Ward } from "./types";
+import { Ward, MapRef } from "./types";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import {
   SwipeableDrawer,
@@ -73,7 +73,7 @@ interface IWardWithScore extends Ward {
 }
 
 interface ITopWardsProps {
-  readonly mapRef: React.MutableRefObject<any>;
+  readonly mapRef: MapRef;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
   readonly geoJsonMap: Map<string, Ward> | null;
   readonly setSelectedWard: (ward: Ward | null) => void;

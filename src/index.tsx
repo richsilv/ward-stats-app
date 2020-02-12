@@ -39,7 +39,7 @@ import {
   getDriveDocument,
   convertGeoJSONData
 } from "./non-hooks";
-import { ConvertedGeoJSONData } from "./types";
+import { ConvertedGeoJSONData, MapRef } from "./types";
 import { GEO_JSON_FILE } from "./constants";
 
 import "./styles.css";
@@ -75,7 +75,7 @@ function setWrappedState<T>(
 function App() {
   const classes = useStyles();
 
-  const mapRef = React.useRef();
+  const mapRef: MapRef = React.useRef();
   const [weightings, setWeightings] = useLocallyStoredState<IWeightings | null>(
     "weightings",
     null

@@ -3,7 +3,7 @@ import * as React from "react";
 import { MapContainer } from "./MapContainer";
 import { WardDetails } from "./WardDetails";
 import { WeightingsEditor } from "./WeightingsEditor";
-import { Ward, IWeightings, IData, StatePair } from "./types";
+import { Ward, IWeightings, IData, StatePair, MapRef } from "./types";
 import { WARD_CODE_FIELD, QUANTUM } from "./constants";
 import { TopWards } from "./TopWards";
 import { useWorkerComputation } from "./hooks";
@@ -14,7 +14,7 @@ import { ActionsMenu } from "./ActionsMenu";
 const worker = new Worker("./worker.ts", { type: "module" });
 let hasRun = { value: false };
 interface IDataContainerProps {
-  readonly mapRef: React.MutableRefObject<any>;
+  readonly mapRef: MapRef;
   readonly sheetData: Array<IData>;
   readonly geoJsonData: Map<string, Ward>;
   readonly weightings: IWeightings;
