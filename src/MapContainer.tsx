@@ -86,6 +86,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     new L.LatLng(53.0, -1.75)
   );
   const [station, setStation] = React.useState<IStation>(stationData[0]);
+  const selectedWardLayer = React.useRef<L.Path | null>(null);
 
   const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
     theme
@@ -100,14 +101,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   const styleFeatures = React.useCallback(
     (feature?: GeoJSON.Feature) => {
-      if (!rankings || !feature || !feature.properties) {
+      if (noScores || !rankings || !feature || !feature.properties) {
         return {};
       }
       const { properties } = feature;
-      const isSelected =
-        selectedWard &&
-        properties[WARD_CODE_FIELD] ===
-          selectedWard.properties[WARD_CODE_FIELD];
 
       const { score, rank } = rankings.get(properties[WARD_CODE_FIELD]) || {
         score: 0,
@@ -115,23 +112,17 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       };
 
       if ((showTop && showTop < rank) || (showAbove && score < showAbove)) {
-        return {
-          opacity: isSelected ? 0.6 : 0.1,
-          fillColor: "transparent"
-        };
+        return {};
       }
 
-      return {
-        stroke: zoom > 9,
-        color: `rgba(0, 0, 0, ${isSelected ? 0.8 : 0.3})`,
-        weight: isSelected ? 2 : 1,
+      const styling: L.PathOptions = {
         opacity: 0.6,
-        fill: true,
-        fillOpacity: noScores ? 0 : Math.abs(0.5 - score) * 0.5 + 0.3,
+        fillOpacity: Math.abs(0.5 - score) * 0.5 + 0.3,
         fillColor: badColor.mix(goodColor, score).string()
       };
+      return styling;
     },
-    [zoom, weightings, rankings, selectedWard, showTop, showAbove]
+    [noScores, rankings, showTop, showAbove]
   );
 
   const onZoom = React.useCallback((event: LeafletEvent) => {
@@ -144,7 +135,26 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   const onClick = React.useCallback((event: LeafletEvent) => {
     setSelectedWard(event.layer.feature);
+    selectedWardLayer.current = event.layer;
+    event.layer.setStyle({
+      opacity: 0.6,
+      color: "rgba(0, 0, 0, 0.8)",
+      weight: 2
+    });
   }, []);
+
+  React.useEffect(() => {
+    if (!selectedWard && selectedWardLayer.current) {
+      selectedWardLayer.current.setStyle({
+        opacity:
+          selectedWardLayer.current.options.fillColor === "transparent"
+            ? 0.3
+            : 0.6,
+        color: "rgba(0, 0, 0, 0.3)",
+        weight: 1
+      });
+    }
+  }, [selectedWard]);
 
   const onClickStationArray = useParameterisedCallbacks(
     stationData.map(station => station.code),
@@ -180,6 +190,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             ref={sendToBack}
             data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
             style={styleFeatures}
+            stroke={true}
+            color="rgba(0, 0, 0, 0.3)"
+            fill={true}
+            fillColor="transparent"
+            opacity={0.3}
+            weight={1}
             onClick={onClick}
           />
         ) : null}
