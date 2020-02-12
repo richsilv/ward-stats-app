@@ -35,9 +35,9 @@ import { csvToObjects, normaliseAll } from "./utils";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
 import {
-  getSheetData,
-  getDriveDocument,
-  convertGeoJSONData
+  getGithubSheetData,
+  convertGeoJSONData,
+  getGithubGeoJson
 } from "./non-hooks";
 import { ConvertedGeoJSONData, MapRef } from "./types";
 import { GEO_JSON_FILE } from "./constants";
@@ -92,20 +92,14 @@ function App() {
   const [geoJsonDataResponse, setGeoJsonDataResponse] = React.useState<
     ApiResponse<ConvertedGeoJSONData>
   >(ApiResponse.preload<ConvertedGeoJSONData>());
-  const signedInState = React.useState(false);
-  const [isSignedIn] = signedInState;
 
   const dbPromise = React.useMemo(() => openIndexedDB(dbName), []);
 
   const makeConvertedSheetData = React.useCallback(async () => {
-    if (!isSignedIn) {
-      return Promise.reject("Not signed in");
-    }
-    return await getSheetData({
-      sheetName: WARD_STATS_FILE,
-      range: WARD_STATS_RANGE
-    }).then((sheetData: SheetData) => normaliseAll(csvToObjects(sheetData)));
-  }, [isSignedIn]);
+    return await getGithubSheetData().then((sheetData: SheetData) =>
+      normaliseAll(csvToObjects(sheetData))
+    );
+  }, []);
 
   React.useEffect(() => {
     setWrappedState(
@@ -116,7 +110,7 @@ function App() {
         makeConvertedSheetData
       )
     );
-  }, [isSignedIn, dbPromise, makeConvertedSheetData]);
+  }, [dbPromise, makeConvertedSheetData]);
 
   React.useEffect(() => {
     const data = sheetDataResponse.data();
@@ -137,13 +131,8 @@ function App() {
   }, [sheetDataResponse]);
 
   const makeGeoJsonData = React.useCallback(() => {
-    if (!isSignedIn) {
-      return Promise.reject("Not signed in");
-    }
-    return getDriveDocument<GeoJSON.FeatureCollection>({
-      filename: GEO_JSON_FILE
-    });
-  }, [isSignedIn]);
+    return getGithubGeoJson();
+  }, []);
 
   React.useEffect(() => {
     setWrappedState(
@@ -155,7 +144,7 @@ function App() {
         convertGeoJSONData
       )
     );
-  }, [isSignedIn, dbPromise, makeGeoJsonData]);
+  }, [dbPromise, makeGeoJsonData]);
 
   const [selectedWard, setSelectedWard] = React.useState<Ward | null>(null);
 
@@ -166,13 +155,6 @@ function App() {
     <ThemeProvider theme={theme}>
       <div className="App">
         <Container>
-          <GoogleAuth
-            apiKey={API_KEY}
-            clientId={CLIENT_ID}
-            discoveryDocs={DISCOVERY_DOCS}
-            scope={SCOPE}
-            signedInState={signedInState}
-          />
           {sheetData && geoJsonData && weightings ? (
             <DataContainer
               mapRef={mapRef}

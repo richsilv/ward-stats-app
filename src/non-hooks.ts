@@ -1,8 +1,10 @@
 /* global gapi */
 import * as React from "react";
-import { debounce, DebounceSettings } from "lodash";
+import { getCsvParser } from "basic-csv-parser";
 
 import { ApiResponse, Ward, SheetData, ConvertedGeoJSONData } from "./types";
+
+const parser = getCsvParser({});
 
 export async function getSheetData({
   sheetName,
@@ -54,6 +56,14 @@ export async function getSheetData({
   return sheetData;
 }
 
+export async function getGithubSheetData() {
+  return fetch(
+    "https://raw.githubusercontent.com/richsilv/ward-stats-app/master/Ward%20stats%20data.csv"
+  )
+    .then(result => result.text())
+    .then(parser);
+}
+
 export async function getDriveDocument<T>({ filename }: { filename: string }) {
   const geoJSONFileDetails: any = await new Promise((resolve, reject) =>
     gapi.client.drive.files
@@ -93,6 +103,14 @@ export async function getDriveDocument<T>({ filename }: { filename: string }) {
   );
 
   return geoJSONDataResponse as T;
+}
+
+export function getGithubGeoJson() {
+  return fetch(
+    "https://raw.githubusercontent.com/richsilv/ward-stats-app/master/Ward%20GeoJson%20simplified.json"
+  )
+    .then(result => result.text())
+    .then(text => JSON.parse(text));
 }
 
 export async function convertGeoJSONData(
