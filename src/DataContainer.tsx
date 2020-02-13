@@ -11,7 +11,7 @@ import { SearchBar } from "./SearchBar";
 import { RightMoveLink } from "./RightMoveLink";
 import { ActionsMenu } from "./ActionsMenu";
 
-const worker = new Worker("./worker.ts", { type: "module" });
+// const worker = new Worker("./worker.ts", { type: "module" });
 let hasRun = { value: false };
 interface IDataContainerProps {
   readonly mapRef: MapRef;
@@ -37,7 +37,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
   showAboveState
 }) => {
   const geoJsonMap = useWorkerComputation<Map<string, Ward>>(
-    worker,
+    null,
     "geoJsonMap",
     sheetData,
     geoJsonData
@@ -51,12 +51,12 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
   const scoresMeta = useWorkerComputation<{
     minScore: number;
     scoreRange: number;
-  } | null>(worker, "scoresMeta", geoJsonToRender, weightings);
+  } | null>(null, "scoresMeta", geoJsonToRender, weightings);
 
   const rankings = useWorkerComputation<Map<
     string,
     { score: number; rank: number }
-  > | null>(worker, "rankings", sheetData, scoresMeta, weightings);
+  > | null>(null, "rankings", sheetData, scoresMeta, weightings);
 
   const selectedWardStats = React.useMemo(() => {
     return rankings
@@ -70,7 +70,6 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
     <div className="data-container">
       <MapContainer
         mapRef={mapRef}
-        weightings={weightings}
         selectedWard={selectedWard}
         rankings={rankings}
         noScores={!scoresMeta || scoresMeta.scoreRange === QUANTUM}

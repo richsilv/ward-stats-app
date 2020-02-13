@@ -315,29 +315,29 @@ export function useParameterisedCallbacks<E extends React.SyntheticEvent<any>>(
   callback: (parameter: string, event: E, ...args: any) => any,
   deps: React.DependencyList
 ) {
-  const storedCallbacks = React.useRef(
+  const [storedCallbacks, setStoredCallbacks] = React.useState(
     new Map<string, React.EventHandler<E>>()
   );
 
   React.useEffect(() => {
-    storedCallbacks.current = new Map<string, React.EventHandler<E>>(
-      parameters.map((parameter): [
-        string,
-        React.EventHandler<React.SyntheticEvent>
-      ] => [
-        parameter,
-        (event: E, ...args: any) => callback(parameter, event, ...args)
-      ])
+    setStoredCallbacks(
+      new Map<string, React.EventHandler<E>>(
+        parameters.map((parameter): [
+          string,
+          React.EventHandler<React.SyntheticEvent>
+        ] => [
+          parameter,
+          (event: E, ...args: any) => callback(parameter, event, ...args)
+        ])
+      )
     );
   }, [...parameters, ...deps]);
 
-  return storedCallbacks.current;
+  return storedCallbacks;
 }
 
-const DISABLE_WORKER = true;
-
 export function useWorkerComputation<T>(
-  worker: Worker,
+  worker: Worker | null,
   name: string,
   ...data: Array<any>
 ) {
@@ -355,7 +355,7 @@ export function useWorkerComputation<T>(
     [...data, setValue]
   );
   React.useEffect(() => {
-    if (DISABLE_WORKER) {
+    if (!worker) {
       const fn = (workerPolyfill as any)[name];
       return setValue(fn(...data));
     }
@@ -364,7 +364,7 @@ export function useWorkerComputation<T>(
     return () => {
       worker.removeEventListener("message", callback);
     };
-  }, [...data, callback, DISABLE_WORKER]);
+  }, [...data, callback]);
 
   return value;
 }

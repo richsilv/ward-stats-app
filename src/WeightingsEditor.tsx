@@ -77,7 +77,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   const onChangeWeightArray = useParameterisedCallbacks<
     React.ChangeEvent<HTMLInputElement>
   >(
-    Object.keys(localWeightings),
+    Object.keys(weightings),
     (header, event) => {
       const value = event.currentTarget.value;
       setLocalWeightings(currentLocalWeightings => ({
@@ -88,13 +88,14 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
         }
       }));
     },
-    []
+    // weightings and localWeightings should have identical keys, and weightings changes less frequently
+    [weightings, setLocalWeightings]
   );
 
   const onChangeScoreTypeArray = useParameterisedCallbacks<
     React.ChangeEvent<{ name?: string; value: unknown }>
   >(
-    Object.keys(localWeightings),
+    Object.keys(weightings),
     (header, event) => {
       const value = event.currentTarget.value;
       setLocalWeightings(currentLocalWeightings => ({
@@ -105,7 +106,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
         }
       }));
     },
-    []
+    [weightings, setLocalWeightings]
   );
 
   const handleSliderChange = useParameterisedCallbacks<React.ChangeEvent<any>>(

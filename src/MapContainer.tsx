@@ -13,11 +13,7 @@ import {
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
 import { WARD_CODE_FIELD } from "./constants";
-import {
-  useDebouncedCallback,
-  useLocallyStoredState,
-  useParameterisedCallbacks
-} from "./hooks";
+import { useLocallyStoredState, useParameterisedCallbacks } from "./hooks";
 import {
   useTheme,
   CircularProgress,
@@ -57,7 +53,6 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface MapContainerProps {
   readonly mapRef: MapRef;
-  readonly weightings: IWeightings;
   readonly selectedWard: Ward | null;
   readonly noScores: boolean;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
@@ -69,7 +64,6 @@ interface MapContainerProps {
 
 export const MapContainer: React.FC<MapContainerProps> = ({
   mapRef,
-  weightings,
   noScores,
   rankings,
   geoJsonToRender,
