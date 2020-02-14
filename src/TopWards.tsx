@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Ward, MapRef } from "./types";
+import { Ward, MapRef, IData } from "./types";
 import { FixedSizeList, ListChildComponentProps } from "react-window";
 import {
   SwipeableDrawer,
@@ -15,7 +15,8 @@ import {
 import * as L from "leaflet";
 import { ListAlt, Close } from "@material-ui/icons";
 
-import { WARD_NAME_FIELD } from "./constants";
+import { WARD_NAME_FIELD, WARD_CODE_FIELD } from "./constants";
+import { useParameterisedCallbacks } from "./hooks";
 
 const ROW_HEIGHT = 35;
 
@@ -67,54 +68,46 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 );
 
-interface IWardWithScore extends Ward {
+interface IDataWithScore extends IData {
   readonly score: number;
   readonly rank: number;
 }
 
 interface ITopWardsProps {
-  readonly mapRef: MapRef;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
-  readonly geoJsonMap: Map<string, Ward> | null;
-  readonly setSelectedWard: (ward: Ward | null) => void;
+  readonly sheetData: Map<string, IData>;
   readonly toggleOpen: () => void;
+  readonly zoomToWard: (wardCode: string) => void;
 }
 
 export const TopWards: React.FC<ITopWardsProps> = ({
   rankings,
-  geoJsonMap,
-  mapRef,
-  setSelectedWard,
-  toggleOpen
+  sheetData,
+  toggleOpen,
+  zoomToWard
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const topWards: Array<IWardWithScore> = React.useMemo(() => {
-    if (!geoJsonMap) return [];
-
+  const topWards: Array<IDataWithScore> = React.useMemo(() => {
     const sortedRankings = Array.from(rankings ? rankings.entries() : []).sort(
       ([_, { rank: rankA }], [__, { rank: rankB }]) => {
         return rankA - rankB;
       }
     );
     return sortedRankings.map(([wardCode, { score, rank }]) => {
-      const thisWard = geoJsonMap.get(wardCode);
+      const thisWard = sheetData.get(wardCode);
       return { ...thisWard!, score, rank };
     });
-  }, [rankings, geoJsonMap]);
+  }, [rankings, sheetData]);
 
-  const zoomToWardFactory = React.useCallback(
-    (ward: Ward) => () => {
-      setSelectedWard(ward);
+  const zoomToWardArray = useParameterisedCallbacks(
+    Array.from(sheetData.keys()),
+    (wardCode: string) => {
       toggleOpen();
-      if (mapRef.current) {
-        mapRef.current.leafletElement.fitBounds(L.geoJSON(ward).getBounds(), {
-          maxZoom: 14
-        });
-      }
+      zoomToWard(wardCode);
     },
-    [setSelectedWard, toggleOpen]
+    [zoomToWard, toggleOpen]
   );
 
   return (
@@ -157,12 +150,15 @@ export const TopWards: React.FC<ITopWardsProps> = ({
               <Box className={classes.tableRow} style={style}>
                 <Cell width={100}>{ward.rank}.</Cell>
                 <Cell width={200}>
-                  <Link href="#" onClick={zoomToWardFactory(ward)}>
-                    {ward.properties[WARD_NAME_FIELD]}
+                  <Link
+                    href="#"
+                    onClick={zoomToWardArray.get(ward[WARD_CODE_FIELD])}
+                  >
+                    {ward[WARD_NAME_FIELD]}
                   </Link>
                 </Cell>
-                <Cell width={200}>{ward.properties["LA Name"]}</Cell>
-                <Cell width={200}>{ward.properties["Region"]}</Cell>
+                <Cell width={200}>{ward["LA Name"]}</Cell>
+                <Cell width={200}>{ward["Region"]}</Cell>
                 <Cell width={100}>{Math.round(ward.score * 1000) / 10}%</Cell>
               </Box>
             );

@@ -102,6 +102,7 @@ export class ApiResponse<T> {
 export type SheetData = Array<Array<number | string>>;
 
 export interface IData {
+  [WARD_CODE_FIELD]: string;
   [header: string]: string | number;
 }
 

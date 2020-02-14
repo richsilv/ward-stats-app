@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { Ward } from "./types";
+import { Ward, IData } from "./types";
 import {
   WARD_NAME_FIELD,
   WARD_CODE_FIELD,
@@ -34,15 +34,15 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface IWardDetailsProps {
-  readonly selectedWard: Ward | null;
+  readonly selectedWardDetails: IData | null;
   readonly score: number;
   readonly rank: number;
   readonly total: number;
-  readonly setSelectedWard: (ward: Ward | null) => void;
+  readonly setSelectedWard: (ward: string | null) => void;
 }
 
 export const WardDetails: React.FC<IWardDetailsProps> = ({
-  selectedWard,
+  selectedWardDetails,
   score,
   rank,
   total,
@@ -54,7 +54,7 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
   const [isOpen, setIsOpen] = React.useState(false);
 
   const onSwipeFactory = React.useCallback(
-    (ward: Ward | null) => () => {
+    (ward: string | null) => () => {
       setIsOpen(!!ward);
       window.setTimeout(() => {
         setSelectedWard(ward);
@@ -64,27 +64,27 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
   );
 
   React.useEffect(() => {
-    if (selectedWard) {
+    if (selectedWardDetails) {
       setIsOpen(true);
     }
-  }, [selectedWard, setIsOpen]);
+  }, [selectedWardDetails, setIsOpen]);
 
-  const content = selectedWard ? (
+  const content = selectedWardDetails ? (
     <div className={classes.drawer}>
       <Typography variant="h2" component="h1">
-        {selectedWard.properties[WARD_NAME_FIELD]}
+        {selectedWardDetails[WARD_NAME_FIELD]}
       </Typography>
-      <Typography>{selectedWard.properties[WARD_NAME_FIELD]}</Typography>
+      <Typography>{selectedWardDetails[WARD_NAME_FIELD]}</Typography>
       <Typography>Score: {Math.round(score * 10000) / 100}%</Typography>
       <Typography>
         Rank: {rank} of {total}
       </Typography>
-      {Object.keys(selectedWard.properties).map(header =>
+      {Object.keys(selectedWardDetails).map(header =>
         IGNORED_FIELDS.includes(header) ||
         NORMALISED_EXTENSION_REGEXP.test(header) ||
         RANKING_EXTENSION_REGEXP.test(header) ? null : (
           <Typography key={header}>
-            {header}: {selectedWard.properties[header]}
+            {header}: {selectedWardDetails[header]}
           </Typography>
         )
       )}
@@ -95,7 +95,9 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
       anchor="right"
       open={isOpen}
       onClose={onSwipeFactory(null)}
-      onOpen={onSwipeFactory(selectedWard)}
+      onOpen={onSwipeFactory(
+        selectedWardDetails && selectedWardDetails[WARD_CODE_FIELD]
+      )}
     >
       {content}
     </SwipeableDrawer>

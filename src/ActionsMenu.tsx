@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Ward, IWeightings, StatePair, MapRef } from "./types";
+import { Ward, IWeightings, StatePair, MapRef, IData } from "./types";
 import {
   SwipeableDrawer,
   makeStyles,
@@ -40,23 +40,23 @@ const useStyles = makeStyles((theme: Theme) =>
 interface IActionsMenuProps {
   readonly mapRef: MapRef;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
-  readonly geoJsonMap: Map<string, Ward> | null;
+  readonly sheetData: Map<string, IData>;
   readonly weightings: IWeightings;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
   readonly setWeightings: (weightings: IWeightings) => void;
-  readonly setSelectedWard: (ward: Ward | null) => void;
+  readonly zoomToWard: (wardCode: string) => void;
 }
 
 export const ActionsMenu: React.FC<IActionsMenuProps> = ({
   rankings,
-  geoJsonMap,
+  sheetData,
   mapRef,
   weightings,
   showTopState,
   showAboveState,
   setWeightings,
-  setSelectedWard
+  zoomToWard
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
@@ -88,9 +88,8 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
     Contents: ({ toggleOpen: toggleTopWardsOpen }) => (
       <TopWards
         rankings={rankings}
-        geoJsonMap={geoJsonMap}
-        mapRef={mapRef}
-        setSelectedWard={setSelectedWard}
+        sheetData={sheetData}
+        zoomToWard={zoomToWard}
         toggleOpen={toggleTopWardsOpen}
       />
     ),

@@ -78,8 +78,15 @@ export function csvToObjects(csv: Array<Array<number | string>>) {
     firstRow!.reduce((objectSoFar: IData, header, index) => {
       objectSoFar[header] = data[index];
       return objectSoFar;
-    }, {})
+    }, {} as IData)
   );
+}
+
+export function arrayToMap<K extends string, T extends { [k in K]: string }>(
+  array: Array<T>,
+  key: K
+) {
+  return new Map(array.map((entry): [string, T] => [entry[key], entry]));
 }
 
 export function calculateScore(weightings: IWeightings, properties: IData) {

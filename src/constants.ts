@@ -10,9 +10,10 @@ export const DISCOVERY_DOCS = [
 export const SCOPE =
   "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.readonly";
 export const WARD_CODE_FIELD = "Ward Code";
+export const WARD_CODE_CODE = "WD11CD";
 export const WARD_NAME_FIELD = "Ward Name";
 export const NON_COMPARISON_FIELDS = [
-  "WD11CD",
+  WARD_CODE_CODE,
   "WD11CDO",
   "WD11NM",
   "WD11NMW",

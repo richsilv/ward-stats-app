@@ -24,14 +24,14 @@ const geoJsonMap = (
 };
 
 const scoresMeta = (
-  geoJsonToRender: Array<Ward> | null,
+  sheetData: Map<string, IData> | null,
   weightings: IWeightings
 ) => {
-  if (!geoJsonToRender) return null;
-  const { minScore, maxScore } = geoJsonToRender.reduce(
+  if (!sheetData) return null;
+  const { minScore, maxScore } = Array.from(sheetData.values()).reduce(
     (
       { minScore, maxScore }: { minScore: number; maxScore: number },
-      { properties }
+      properties
     ) => {
       const score = calculateScore(weightings, properties!);
       return {

@@ -31,7 +31,7 @@ import {
   ApiResponse,
   IData
 } from "./types";
-import { csvToObjects, normaliseAll } from "./utils";
+import { csvToObjects, normaliseAll, arrayToMap } from "./utils";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
 import {
@@ -40,7 +40,7 @@ import {
   getGithubGeoJson
 } from "./non-hooks";
 import { ConvertedGeoJSONData, MapRef } from "./types";
-import { GEO_JSON_FILE } from "./constants";
+import { GEO_JSON_FILE, WARD_CODE_FIELD } from "./constants";
 
 import "./styles.css";
 import { useLocallyStoredState } from "./hooks";
@@ -87,24 +87,24 @@ function App() {
   );
 
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
-    ApiResponse<Array<IData>>
-  >(ApiResponse.preload<Array<IData>>());
+    ApiResponse<Map<string, IData>>
+  >(ApiResponse.preload<Map<string, IData>>());
   const [geoJsonDataResponse, setGeoJsonDataResponse] = React.useState<
-    ApiResponse<ConvertedGeoJSONData>
-  >(ApiResponse.preload<ConvertedGeoJSONData>());
+    ApiResponse<GeoJSON.FeatureCollection>
+  >(ApiResponse.preload<GeoJSON.FeatureCollection>());
 
   const dbPromise = React.useMemo(() => openIndexedDB(dbName), []);
 
   const makeConvertedSheetData = React.useCallback(async () => {
     return await getGithubSheetData().then((sheetData: SheetData) =>
-      normaliseAll(csvToObjects(sheetData))
+      arrayToMap(normaliseAll(csvToObjects(sheetData)), WARD_CODE_FIELD)
     );
   }, []);
 
   React.useEffect(() => {
     setWrappedState(
       setSheetDataResponse,
-      getIndexedDBValue<Array<IData>>(
+      getIndexedDBValue<Map<string, IData>>(
         dbPromise,
         "sheetData",
         makeConvertedSheetData
@@ -116,37 +116,35 @@ function App() {
     const data = sheetDataResponse.data();
     if (data && !weightings) {
       setWeightings(
-        Object.keys(data[0]).reduce((objectSoFar: IWeightings, header) => {
-          if (
-            !NON_COMPARISON_FIELDS.includes(header) &&
-            !NORMALISED_EXTENSION_REGEXP.test(header) &&
-            !RANKING_EXTENSION_REGEXP.test(header)
-          ) {
-            objectSoFar[header] = { weight: 0, type: ScoreType.Normalised };
-          }
-          return objectSoFar;
-        }, {})
+        Object.keys(data.values().next().value).reduce(
+          (objectSoFar: IWeightings, header) => {
+            if (
+              !NON_COMPARISON_FIELDS.includes(header) &&
+              !NORMALISED_EXTENSION_REGEXP.test(header) &&
+              !RANKING_EXTENSION_REGEXP.test(header)
+            ) {
+              objectSoFar[header] = { weight: 0, type: ScoreType.Normalised };
+            }
+            return objectSoFar;
+          },
+          {}
+        )
       );
     }
   }, [sheetDataResponse]);
 
-  const makeGeoJsonData = React.useCallback(() => {
-    return getGithubGeoJson();
-  }, []);
-
   React.useEffect(() => {
     setWrappedState(
       setGeoJsonDataResponse,
-      getIndexedDBValue<ConvertedGeoJSONData, GeoJSON.FeatureCollection>(
+      getIndexedDBValue<GeoJSON.FeatureCollection, GeoJSON.FeatureCollection>(
         dbPromise,
         "geoJSON",
-        makeGeoJsonData,
-        convertGeoJSONData
+        getGithubGeoJson
       )
     );
-  }, [dbPromise, makeGeoJsonData]);
+  }, [dbPromise]);
 
-  const [selectedWard, setSelectedWard] = React.useState<Ward | null>(null);
+  const [selectedWard, setSelectedWard] = React.useState<string | null>(null);
 
   const sheetData = sheetDataResponse.data();
   const geoJsonData = geoJsonDataResponse.data();

@@ -12,7 +12,7 @@ import {
   Popup
 } from "react-leaflet";
 import { LeafletEvent } from "leaflet";
-import { WARD_CODE_FIELD } from "./constants";
+import { WARD_CODE_FIELD, WARD_CODE_CODE } from "./constants";
 import { useLocallyStoredState, useParameterisedCallbacks } from "./hooks";
 import {
   useTheme,
@@ -53,20 +53,20 @@ const useStyles = makeStyles((theme: Theme) =>
 
 interface MapContainerProps {
   readonly mapRef: MapRef;
-  readonly selectedWard: Ward | null;
+  readonly selectedWard: string | null;
   readonly noScores: boolean;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
-  readonly geoJsonToRender: Array<Ward> | null;
+  readonly geoJsonData: GeoJSON.FeatureCollection;
   readonly showTop: number | null;
   readonly showAbove: number | null;
-  readonly setSelectedWard: (ward: Ward) => void;
+  readonly setSelectedWard: (ward: string) => void;
 }
 
 export const MapContainer: React.FC<MapContainerProps> = ({
   mapRef,
   noScores,
   rankings,
-  geoJsonToRender,
+  geoJsonData,
   selectedWard,
   showTop,
   showAbove,
@@ -98,9 +98,9 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       if (noScores || !rankings || !feature || !feature.properties) {
         return {};
       }
-      const { properties } = feature;
-
-      const { score, rank } = rankings.get(properties[WARD_CODE_FIELD]) || {
+      const { score, rank } = rankings.get(
+        feature.properties[WARD_CODE_FIELD]
+      ) || {
         score: 0,
         rank: 0
       };
@@ -128,7 +128,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   }, []);
 
   const onClick = React.useCallback((event: LeafletEvent) => {
-    setSelectedWard(event.layer.feature);
+    setSelectedWard(event.layer.feature.properties[WARD_CODE_CODE]);
     selectedWardLayer.current = event.layer;
     event.layer.setStyle({
       opacity: 0.6,
@@ -179,10 +179,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           attribution='&amp;copy <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geoJsonToRender && rankings ? (
+        {geoJsonData && rankings ? (
           <LeafletGeoJSON
             ref={sendToBack}
-            data={(geoJsonToRender as unknown) as GeoJSON.GeoJsonObject}
+            data={geoJsonData}
             style={styleFeatures}
             stroke={true}
             color="rgba(0, 0, 0, 0.3)"
@@ -231,10 +231,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
           </FeatureGroup>
         ) : null}
       </LeafletMap>
-      <Backdrop
-        className={classes.backdrop}
-        open={!geoJsonToRender || !rankings}
-      >
+      <Backdrop className={classes.backdrop} open={!rankings}>
         <CircularProgress color="inherit" />
       </Backdrop>
     </React.Fragment>
