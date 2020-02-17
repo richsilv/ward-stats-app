@@ -99,7 +99,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         return {};
       }
       const { score, rank } = rankings.get(
-        feature.properties[WARD_CODE_FIELD]
+        feature.properties[WARD_CODE_CODE]
       ) || {
         score: 0,
         rank: 0

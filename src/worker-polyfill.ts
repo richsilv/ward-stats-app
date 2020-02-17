@@ -8,7 +8,7 @@ const geoJsonMap = (
 ) => {
   if (!sheetData || !geoJsonData) return null;
   const features: Map<string, Ward> = new Map(
-    sheetData.map((data): [string, Ward] => {
+    Array.from(sheetData.values()).map((data): [string, Ward] => {
       const wardCode = data[WARD_CODE_FIELD] as string;
       const feature = geoJsonData.get(wardCode);
       return [
@@ -45,13 +45,13 @@ const scoresMeta = (
 };
 
 const rankings = (
-  sheetData: Array<IData>,
+  sheetData: Map<string, IData>,
   scoresMeta: { minScore: number; scoreRange: number } | null,
   weightings: IWeightings
 ) => {
   if (!scoresMeta || !weightings) return null;
   const rankings = new Map(
-    sheetData
+    Array.from(sheetData.values())
       .map((dataItem): [string, number] => [
         dataItem[WARD_CODE_FIELD] as string,
         (calculateScore(weightings, dataItem) - scoresMeta.minScore) /
