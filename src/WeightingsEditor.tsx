@@ -36,50 +36,30 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface IWeightingsProps {
-  readonly isOpen: boolean;
-  readonly weightings: IWeightings;
+  readonly localWeightings: IWeightings;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
-  readonly setWeightings: (weightings: IWeightings) => void;
+  readonly setLocalWeightings: (
+    weightings: IWeightings | ((currentWeightings: IWeightings) => IWeightings)
+  ) => void;
 }
 
 export const WeightingsEditor: React.FC<IWeightingsProps> = ({
-  isOpen,
-  weightings,
-  setWeightings,
+  localWeightings,
+  setLocalWeightings,
   showTopState: [showTop, setShowTop],
   showAboveState: [showAbove, setShowAbove]
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
 
-  const wasOpen = React.useRef(false);
-  const [localWeightings, setLocalWeightings] = React.useState<IWeightings>(
-    weightings
-  );
-
-  React.useEffect(() => {
-    if (isOpen && !wasOpen.current) {
-      setLocalWeightings(weightings);
-    }
-  }, [isOpen, wasOpen, weightings]);
-
-  React.useEffect(() => {
-    if (wasOpen.current && !isOpen) {
-      setWeightings(localWeightings);
-    }
-  }, [isOpen, wasOpen, localWeightings]);
-
-  React.useEffect(() => {
-    wasOpen.current = isOpen;
-  }, [isOpen, wasOpen]);
-
   const onChangeWeightArray = useParameterisedCallbacks<
     React.ChangeEvent<HTMLInputElement>
   >(
-    Object.keys(weightings),
+    Object.keys(localWeightings),
     (header, event) => {
       const value = event.currentTarget.value;
+      console.log(header, value);
       setLocalWeightings(currentLocalWeightings => ({
         ...currentLocalWeightings,
         [header]: {
@@ -89,13 +69,13 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
       }));
     },
     // weightings and localWeightings should have identical keys, and weightings changes less frequently
-    [weightings, setLocalWeightings]
+    [localWeightings, setLocalWeightings]
   );
 
   const onChangeScoreTypeArray = useParameterisedCallbacks<
     React.ChangeEvent<{ name?: string; value: unknown }>
   >(
-    Object.keys(weightings),
+    Object.keys(localWeightings),
     (header, event) => {
       const value = event.currentTarget.value;
       setLocalWeightings(currentLocalWeightings => ({
@@ -106,7 +86,7 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
         }
       }));
     },
-    [weightings, setLocalWeightings]
+    [localWeightings, setLocalWeightings]
   );
 
   const handleSliderChange = useParameterisedCallbacks<React.ChangeEvent<any>>(

@@ -31,10 +31,10 @@ export const RightMoveLink: React.FC<IRightMoveLinkProps> = ({
     }
     onClick();
     const bounds: L.LatLngBounds = mapRef.current.leafletElement.getBounds();
-    const north = bounds.getNorth();
-    const south = bounds.getSouth();
-    const east = bounds.getEast();
-    const west = bounds.getWest();
+    const north = Number(bounds.getNorth().toFixed(5));
+    const south = Number(bounds.getSouth().toFixed(5));
+    const east = Number(bounds.getEast().toFixed(5));
+    const west = Number(bounds.getWest().toFixed(5));
     const polygon = [
       [north, west],
       [north, east],

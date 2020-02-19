@@ -61,25 +61,35 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
   const theme = useTheme();
   const classes = useStyles(theme);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [localWeightings, setLocalWeightings] = React.useState(weightings);
 
   const toggleOpen = React.useCallback(() => {
     setIsOpen(_isOpen => !_isOpen);
   }, [setIsOpen]);
+
+  const onOpenWeightingsEditor = React.useCallback(() => {
+    toggleOpen();
+    setLocalWeightings(weightings);
+  }, [toggleOpen, weightings]);
+
+  const onCloseWeightingsEditor = React.useCallback(() => {
+    setWeightings(localWeightings);
+  }, [localWeightings]);
 
   const [weightingsFab, weightingsDrawer] = useDrawerToggle({
     icon: <Edit />,
     anchor: "left",
     Contents: ({ isOpen }) => (
       <WeightingsEditor
-        isOpen={isOpen}
-        weightings={weightings}
-        setWeightings={setWeightings}
+        localWeightings={localWeightings}
+        setLocalWeightings={setLocalWeightings}
         showTopState={showTopState}
         showAboveState={showAboveState}
       />
     ),
     callbacks: {
-      onOpen: toggleOpen
+      onOpen: onOpenWeightingsEditor,
+      onClose: onCloseWeightingsEditor
     }
   });
   const [topWardsFab, topWardsDrawer] = useDrawerToggle({
