@@ -81,11 +81,12 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   );
   const [station, setStation] = React.useState<IStation>(stationData[0]);
   const selectedWardLayer = React.useRef<L.Path | null>(null);
+  const geoJsonLayer = React.useRef<L.GeoJSON | null>(null);
 
-  const goodColor = React.useMemo(() => Color(theme.palette.primary.main), [
+  const goodColor = React.useMemo(() => Color(theme.palette.success.dark), [
     theme
   ]);
-  const badColor = React.useMemo(() => Color(theme.palette.error.main), [
+  const badColor = React.useMemo(() => Color(theme.palette.error.light), [
     theme
   ]);
 
@@ -98,11 +99,8 @@ export const MapContainer: React.FC<MapContainerProps> = ({
       if (noScores || !rankings || !feature || !feature.properties) {
         return {};
       }
-      const { score, rank } = rankings.get(
-        feature.properties[WARD_CODE_CODE]
-      ) || {
-        score: 0,
-        rank: 0
+      const { score } = rankings.get(feature.properties[WARD_CODE_CODE]) || {
+        score: 0
       };
 
       const styling: L.PathOptions = {
@@ -117,6 +115,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   const filter = React.useCallback(
     (feature?: GeoJSON.Feature) => {
+      console.log("running");
       if (noScores || !rankings || !feature || !feature.properties) {
         return false;
       }
@@ -135,6 +134,16 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     },
     [noScores, rankings, showTop, showAbove]
   );
+
+  React.useEffect(() => {
+    const layer = geoJsonLayer.current;
+    if (layer) {
+      layer.clearLayers();
+      console.log(layer);
+      layer.options.filter = filter;
+      window.requestAnimationFrame(() => layer.addData(geoJsonData));
+    }
+  }, [showTop, showAbove, rankings]);
 
   const onZoom = React.useCallback((event: LeafletEvent) => {
     setZoom(event.target.getZoom());
@@ -178,10 +187,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     [stationData, setStation]
   );
 
-  const sendToBack = React.useCallback(
-    (element: any) => element.leafletElement.bringToBack(),
-    []
-  );
+  const geoJsonRefCallback = React.useCallback((element: any) => {
+    element.leafletElement.bringToBack();
+    geoJsonLayer.current = element.leafletElement;
+  }, []);
 
   return (
     <React.Fragment>
@@ -198,7 +207,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         />
         {geoJsonData && rankings ? (
           <LeafletGeoJSON
-            ref={sendToBack}
+            ref={geoJsonRefCallback}
             data={geoJsonData}
             style={styleFeatures}
             filter={filter}
