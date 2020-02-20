@@ -59,7 +59,6 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
     Object.keys(localWeightings),
     (header, event) => {
       const value = event.currentTarget.value;
-      console.log(header, value);
       setLocalWeightings(currentLocalWeightings => ({
         ...currentLocalWeightings,
         [header]: {

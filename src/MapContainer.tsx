@@ -105,16 +105,33 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         rank: 0
       };
 
-      if ((showTop && showTop < rank) || (showAbove && score < showAbove)) {
-        return {};
-      }
-
       const styling: L.PathOptions = {
         opacity: 0.6,
         fillOpacity: Math.abs(0.5 - score) * 0.5 + 0.3,
         fillColor: badColor.mix(goodColor, score).string()
       };
       return styling;
+    },
+    [noScores, rankings]
+  );
+
+  const filter = React.useCallback(
+    (feature?: GeoJSON.Feature) => {
+      if (noScores || !rankings || !feature || !feature.properties) {
+        return false;
+      }
+      const { score, rank } = rankings.get(
+        feature.properties[WARD_CODE_CODE]
+      ) || {
+        score: 0,
+        rank: 0
+      };
+
+      return (
+        (!!showTop && showTop >= rank) ||
+        (!!showAbove && score >= showAbove) ||
+        (!showTop && !showAbove)
+      );
     },
     [noScores, rankings, showTop, showAbove]
   );
@@ -184,6 +201,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             ref={sendToBack}
             data={geoJsonData}
             style={styleFeatures}
+            filter={filter}
             stroke={true}
             color="rgba(0, 0, 0, 0.3)"
             fill={true}
