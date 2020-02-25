@@ -18,10 +18,9 @@ interface IDataContainerProps {
   readonly mapRef: MapRef;
   readonly sheetData: Map<string, IData>;
   readonly geoJsonData: GeoJSON.FeatureCollection;
-  readonly weightings: IWeightings;
   readonly selectedWard: string | null;
   readonly setSelectedWard: (ward: string | null) => void;
-  readonly setWeightings: (weightings: IWeightings) => void;
+  readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
 }
@@ -30,22 +29,21 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
   mapRef,
   sheetData,
   geoJsonData,
-  weightings,
+  weightingsState,
   selectedWard,
   setSelectedWard,
-  setWeightings,
   showTopState,
   showAboveState
 }) => {
   const scoresMeta = useWorkerComputation<{
     minScore: number;
     scoreRange: number;
-  } | null>(null, "scoresMeta", sheetData, weightings);
+  } | null>(null, "scoresMeta", sheetData, weightingsState[0]);
 
   const rankings = useWorkerComputation<Map<
     string,
     { score: number; rank: number }
-  > | null>(null, "rankings", sheetData, scoresMeta, weightings);
+  > | null>(null, "rankings", sheetData, scoresMeta, weightingsState[0]);
 
   const selectedWardStats = React.useMemo(() => {
     return rankings
@@ -101,8 +99,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         sheetData={sheetData}
         mapRef={mapRef}
         zoomToWard={zoomToWard}
-        weightings={weightings}
-        setWeightings={setWeightings}
+        weightingsState={weightingsState}
         showTopState={showTopState}
         showAboveState={showAboveState}
       />

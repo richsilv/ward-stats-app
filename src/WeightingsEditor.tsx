@@ -36,17 +36,13 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 interface IWeightingsProps {
-  readonly localWeightings: IWeightings;
+  readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
-  readonly setLocalWeightings: (
-    weightings: IWeightings | ((currentWeightings: IWeightings) => IWeightings)
-  ) => void;
 }
 
 export const WeightingsEditor: React.FC<IWeightingsProps> = ({
-  localWeightings,
-  setLocalWeightings,
+  weightingsState: [weightings, setWeightings],
   showTopState: [showTop, setShowTop],
   showAboveState: [showAbove, setShowAbove]
 }) => {
@@ -56,36 +52,33 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   const onChangeWeightArray = useParameterisedCallbacks<
     React.ChangeEvent<HTMLInputElement>
   >(
-    Object.keys(localWeightings),
+    Object.keys(weightings),
     (header, event) => {
       const value = event.currentTarget.value;
-      setLocalWeightings(currentLocalWeightings => ({
-        ...currentLocalWeightings,
+      setWeightings({
         [header]: {
-          type: currentLocalWeightings[header].type,
+          type: weightings[header].type,
           weight: parseFloat(value)
         }
-      }));
+      });
     },
-    // weightings and localWeightings should have identical keys, and weightings changes less frequently
-    [localWeightings, setLocalWeightings]
+    [weightings, setWeightings]
   );
 
   const onChangeScoreTypeArray = useParameterisedCallbacks<
     React.ChangeEvent<{ name?: string; value: unknown }>
   >(
-    Object.keys(localWeightings),
+    Object.keys(weightings),
     (header, event) => {
       const value = event.currentTarget.value;
-      setLocalWeightings(currentLocalWeightings => ({
-        ...currentLocalWeightings,
+      setWeightings({
         [header]: {
-          weight: currentLocalWeightings[header].weight,
+          weight: weightings[header].weight,
           type: parseInt(value as string, 10) as ScoreType
         }
-      }));
+      });
     },
-    [localWeightings, setLocalWeightings]
+    [weightings, setWeightings]
   );
 
   const handleSliderChange = useParameterisedCallbacks<React.ChangeEvent<any>>(
@@ -108,8 +101,8 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
     (header, event) => {
       const [top, above] =
         header === "top"
-          ? [parseFloat(event.currentTarget.value), null]
-          : [null, parseFloat(event.currentTarget.value)];
+          ? [parseFloat(event.currentTarget.value) || null, null]
+          : [null, parseFloat(event.currentTarget.value) || null];
       setShowTop(top);
       setShowAbove(above);
     },
@@ -119,8 +112,8 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
   return (
     <React.Fragment>
       <div className={classes.drawer}>
-        {Object.keys(localWeightings).map(header => {
-          const { weight, type } = localWeightings[header];
+        {Object.keys(weightings).map(header => {
+          const { weight, type } = weightings[header];
           return (
             <div className={classes.entry} key={header}>
               <TextField

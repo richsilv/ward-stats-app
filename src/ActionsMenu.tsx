@@ -1,19 +1,18 @@
 import * as React from "react";
-import { Ward, IWeightings, StatePair, MapRef, IData } from "./types";
+import { IWeightings, StatePair, MapRef, IData } from "./types";
 import {
   SwipeableDrawer,
   makeStyles,
   Theme,
   createStyles,
-  Fab,
   useTheme,
-  Paper
+  Backdrop
 } from "@material-ui/core";
-import { Close, Menu, Edit, ListAlt } from "@material-ui/icons";
+import { Edit, ListAlt, House } from "@material-ui/icons";
 import { WeightingsEditor } from "./WeightingsEditor";
-import { RightMoveLink } from "./RightMoveLink";
 import { TopWards } from "./TopWards";
-import { useDrawerToggle } from "./hooks";
+import { SpeedDial, SpeedDialIcon, SpeedDialAction } from "@material-ui/lab";
+import geojsonPolyline from "polyline";
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -22,17 +21,10 @@ const useStyles = makeStyles((theme: Theme) =>
       bottom: theme.spacing(2),
       left: theme.spacing(2)
     },
-    close: {
-      position: "absolute",
-      top: theme.spacing(2),
-      right: theme.spacing(2)
-    },
     root: {
-      padding: theme.spacing(2),
-      "& > *": {
-        display: "inline-flex",
-        marginLeft: theme.spacing(2)
-      }
+      // height: 380,
+      transform: "translateZ(0px)",
+      flexGrow: 1
     }
   })
 );
@@ -41,109 +33,290 @@ interface IActionsMenuProps {
   readonly mapRef: MapRef;
   readonly rankings: Map<string, { score: number; rank: number }> | null;
   readonly sheetData: Map<string, IData>;
-  readonly weightings: IWeightings;
+  readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
-  readonly setWeightings: (weightings: IWeightings) => void;
   readonly zoomToWard: (wardCode: string) => void;
 }
+
+interface IActionMenuState {
+  readonly panesOpen: {
+    readonly main: boolean;
+    readonly weightings: boolean;
+    readonly topWards: boolean;
+  };
+  readonly weightings: IWeightings;
+  readonly showTop: number | null;
+  readonly showAbove: number | null;
+}
+
+type Pane = "main" | "weightings" | "topWards";
+type Action =
+  | {
+      type: "closePanes";
+    }
+  | {
+      type: "closePane";
+      pane: Pane;
+    }
+  | {
+      type: "openPane";
+      pane: Pane;
+    }
+  | {
+      type: "updateWeightings";
+      weightings: IWeightings;
+    }
+  | {
+      type: "updateShowTop";
+      showTop: number | null;
+    }
+  | {
+      type: "updateShowAbove";
+      showAbove: number | null;
+    };
 
 export const ActionsMenu: React.FC<IActionsMenuProps> = ({
   rankings,
   sheetData,
   mapRef,
-  weightings,
+  weightingsState,
   showTopState,
   showAboveState,
-  setWeightings,
   zoomToWard
 }) => {
   const theme = useTheme();
   const classes = useStyles(theme);
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [localWeightings, setLocalWeightings] = React.useState(weightings);
 
-  const toggleOpen = React.useCallback(() => {
-    setIsOpen(_isOpen => !_isOpen);
-  }, [setIsOpen]);
-
-  const onOpenWeightingsEditor = React.useCallback(() => {
-    toggleOpen();
-    setLocalWeightings(weightings);
-  }, [toggleOpen, weightings]);
-
-  const onCloseWeightingsEditor = React.useCallback(() => {
-    setWeightings(localWeightings);
-  }, [localWeightings]);
-
-  const [weightingsFab, weightingsDrawer] = useDrawerToggle({
-    icon: <Edit />,
-    anchor: "left",
-    Contents: ({ isOpen }) => (
-      <WeightingsEditor
-        localWeightings={localWeightings}
-        setLocalWeightings={setLocalWeightings}
-        showTopState={showTopState}
-        showAboveState={showAboveState}
-      />
-    ),
-    callbacks: {
-      onOpen: onOpenWeightingsEditor,
-      onClose: onCloseWeightingsEditor
-    }
-  });
-  const [topWardsFab, topWardsDrawer] = useDrawerToggle({
-    icon: <ListAlt />,
-    anchor: "top",
-    Contents: ({ toggleOpen: toggleTopWardsOpen }) => (
-      <TopWards
-        rankings={rankings}
-        sheetData={sheetData}
-        zoomToWard={zoomToWard}
-        toggleOpen={toggleTopWardsOpen}
-      />
-    ),
-    callbacks: {
-      onOpen: toggleOpen
-    }
-  });
-
-  const drawerContents = (
-    <Paper className={classes.root}>
-      {weightingsFab}
-      {topWardsFab}
-      <RightMoveLink mapRef={mapRef} onClick={toggleOpen} />
-      <Fab
-        aria-label="Close menu"
-        className={classes.close}
-        color="default"
-        onClick={toggleOpen}
-      >
-        <Close />
-      </Fab>
-    </Paper>
+  const reducer = React.useCallback(
+    (state: IActionMenuState, action: Action) => {
+      switch (action.type) {
+        case "openPane": {
+          const updatedState =
+            action.pane === "weightings"
+              ? {
+                  weightings: weightingsState[0],
+                  showTop: showTopState[0],
+                  showAbove: showAboveState[0]
+                }
+              : state;
+          return {
+            ...updatedState,
+            panesOpen: {
+              main: false,
+              weightings: false,
+              topWards: false,
+              [action.pane]: true
+            }
+          };
+        }
+        case "closePane":
+          return {
+            ...state,
+            panesOpen: {
+              ...state.panesOpen,
+              [action.pane]: false
+            }
+          };
+        case "closePanes":
+          return {
+            ...state,
+            panesOpen: {
+              main: false,
+              weightings: false,
+              topWards: false
+            }
+          };
+        case "updateWeightings":
+          return {
+            ...state,
+            weightings: {
+              ...state.weightings,
+              ...action.weightings
+            }
+          };
+        case "updateShowTop":
+          return {
+            ...state,
+            showTop: action.showTop
+          };
+        case "updateShowAbove":
+          return {
+            ...state,
+            showAbove: action.showAbove
+          };
+        default:
+          return state;
+      }
+    },
+    [weightingsState, showTopState, showAboveState]
   );
+  const [state, dispatch] = React.useReducer(reducer, {
+    weightings: weightingsState[0],
+    showTop: showTopState[0],
+    showAbove: showAboveState[0],
+    panesOpen: {
+      main: false,
+      weightings: false,
+      topWards: false
+    }
+  });
+
+  const setWeightings = React.useCallback(
+    (weightings: IWeightings) => {
+      dispatch({ type: "updateWeightings", weightings });
+    },
+    [dispatch]
+  );
+  const setShowTop = React.useCallback(
+    (showTop: number | null) => {
+      dispatch({ type: "updateShowTop", showTop });
+    },
+    [dispatch]
+  );
+  const setShowAbove = React.useCallback(
+    (showAbove: number | null) => {
+      dispatch({ type: "updateShowAbove", showAbove });
+    },
+    [dispatch]
+  );
+
+  const setOpenFactory = React.useCallback(
+    (pane: Pane) => () => {
+      dispatch({
+        type: "openPane",
+        pane
+      });
+    },
+    [dispatch]
+  );
+  const setClosedFactory = React.useCallback(
+    (pane: Pane) => () => {
+      dispatch({
+        type: "closePane",
+        pane
+      });
+    },
+    [dispatch]
+  );
+  const setClosed = React.useCallback(() => {
+    dispatch({
+      type: "closePanes"
+    });
+  }, [dispatch]);
+
+  React.useEffect(() => {
+    if (!state.panesOpen.weightings) {
+      weightingsState[1](state.weightings);
+      showTopState[1](state.showTop);
+      showAboveState[1](state.showAbove);
+    }
+  }, [state.panesOpen.weightings]);
+
+  const openRightmoveLink = React.useCallback(() => {
+    if (!mapRef.current) {
+      return;
+    }
+    const bounds: L.LatLngBounds = mapRef.current.leafletElement.getBounds();
+    const north = Number(bounds.getNorth().toFixed(5));
+    const south = Number(bounds.getSouth().toFixed(5));
+    const east = Number(bounds.getEast().toFixed(5));
+    const west = Number(bounds.getWest().toFixed(5));
+    const polygon = [
+      [north, west],
+      [north, east],
+      [south, east],
+      [south, west],
+      [north, west]
+    ];
+    const encoded = geojsonPolyline.encode(polygon);
+    console.log(polygon, encoded);
+    window.open(
+      `https://www.rightmove.co.uk/property-for-sale/map.html?locationIdentifier=USERDEFINEDAREA%5E%7B%22polylines%22%3A%22${encoded}%22%7D`
+    );
+  }, [mapRef]);
+
+  const actions = React.useMemo(() => {
+    return [
+      {
+        name: "View data for the top wards",
+        icon: <ListAlt />,
+        onClick: () => {
+          dispatch({ type: "openPane", pane: "topWards" });
+        }
+      },
+      {
+        name: "See this area on Rightmove",
+        icon: <House />,
+        onClick: () => {
+          openRightmoveLink();
+          dispatch({ type: "closePanes" });
+        }
+      },
+      {
+        name: "Edit weightings",
+        icon: <Edit />,
+        onClick: () => {
+          dispatch({ type: "openPane", pane: "weightings" });
+        }
+      }
+    ];
+  }, [dispatch, openRightmoveLink]);
 
   return (
     <React.Fragment>
-      <Fab
-        aria-label="Actions menu"
+      <Backdrop open={state.panesOpen.main} />
+      <SpeedDial
+        ariaLabel="SpeedDial tooltip example"
         className={classes.fab}
-        color="primary"
-        onClick={toggleOpen}
+        icon={<SpeedDialIcon />}
+        onOpen={setOpenFactory("main")}
+        onClose={setClosedFactory("main")}
+        open={state.panesOpen.main}
       >
-        <Menu />
-      </Fab>
+        {actions.map(action => (
+          <SpeedDialAction
+            key={action.name}
+            icon={action.icon}
+            tooltipTitle={action.name}
+            tooltipPlacement="right"
+            onClick={action.onClick}
+          />
+        ))}
+      </SpeedDial>
       <SwipeableDrawer
-        anchor="bottom"
-        open={isOpen}
-        onClose={toggleOpen}
-        onOpen={toggleOpen}
+        anchor="left"
+        open={state.panesOpen.weightings}
+        disableDiscovery
+        disableSwipeToOpen
+        onOpen={setOpenFactory("weightings")}
+        onClose={setClosed}
       >
-        {drawerContents}
+        <WeightingsEditor
+          weightingsState={
+            [state.weightings, setWeightings] as StatePair<IWeightings>
+          }
+          showTopState={[state.showTop, setShowTop] as StatePair<number | null>}
+          showAboveState={
+            [state.showAbove, setShowAbove] as StatePair<number | null>
+          }
+        />
       </SwipeableDrawer>
-      {weightingsDrawer}
-      {topWardsDrawer}
+      <SwipeableDrawer
+        anchor="top"
+        open={state.panesOpen.topWards}
+        disableDiscovery
+        disableSwipeToOpen
+        onOpen={setOpenFactory("topWards")}
+        onClose={setClosed}
+      >
+        <TopWards
+          rankings={rankings}
+          sheetData={sheetData}
+          zoomToWard={zoomToWard}
+          closePane={setClosed}
+        />
+      </SwipeableDrawer>
     </React.Fragment>
   );
 };

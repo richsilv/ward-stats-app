@@ -76,14 +76,14 @@ interface IDataWithScore extends IData {
 interface ITopWardsProps {
   readonly rankings: Map<string, { score: number; rank: number }> | null;
   readonly sheetData: Map<string, IData>;
-  readonly toggleOpen: () => void;
+  readonly closePane: () => void;
   readonly zoomToWard: (wardCode: string) => void;
 }
 
 export const TopWards: React.FC<ITopWardsProps> = ({
   rankings,
   sheetData,
-  toggleOpen,
+  closePane,
   zoomToWard
 }) => {
   const theme = useTheme();
@@ -104,10 +104,10 @@ export const TopWards: React.FC<ITopWardsProps> = ({
   const zoomToWardArray = useParameterisedCallbacks(
     Array.from(sheetData.keys()),
     (wardCode: string) => {
-      toggleOpen();
+      closePane();
       zoomToWard(wardCode);
     },
-    [zoomToWard, toggleOpen]
+    [zoomToWard, closePane]
   );
 
   return (
@@ -116,7 +116,7 @@ export const TopWards: React.FC<ITopWardsProps> = ({
         aria-label="Close top wards"
         className={classes.fab}
         color="default"
-        onClick={toggleOpen}
+        onClick={closePane}
       >
         <Close />
       </Fab>

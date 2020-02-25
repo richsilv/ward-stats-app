@@ -115,7 +115,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
 
   const filter = React.useCallback(
     (feature?: GeoJSON.Feature) => {
-      console.log("running");
       if (noScores || !rankings || !feature || !feature.properties) {
         return false;
       }
@@ -139,7 +138,6 @@ export const MapContainer: React.FC<MapContainerProps> = ({
     const layer = geoJsonLayer.current;
     if (layer) {
       layer.clearLayers();
-      console.log(layer);
       layer.options.filter = filter;
       window.requestAnimationFrame(() => layer.addData(geoJsonData));
     }

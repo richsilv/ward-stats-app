@@ -29,7 +29,8 @@ import {
   ScoreType,
   SheetData,
   ApiResponse,
-  IData
+  IData,
+  StatePair
 } from "./types";
 import { csvToObjects, normaliseAll, arrayToMap } from "./utils";
 import { DataContainer } from "./DataContainer";
@@ -76,7 +77,7 @@ function App() {
   const classes = useStyles();
 
   const mapRef: MapRef = React.useRef();
-  const [weightings, setWeightings] = useLocallyStoredState<IWeightings | null>(
+  const weightingsState = useLocallyStoredState<IWeightings | null>(
     "weightings",
     null
   );
@@ -85,6 +86,7 @@ function App() {
     "showAbove",
     null
   );
+  const [weightings, setWeightings] = weightingsState;
 
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
     ApiResponse<Map<string, IData>>
@@ -153,15 +155,14 @@ function App() {
     <ThemeProvider theme={theme}>
       <div className="App">
         <Container>
-          {sheetData && geoJsonData && weightings ? (
+          {sheetData && geoJsonData && weightingsState[0] ? (
             <DataContainer
               mapRef={mapRef}
               sheetData={sheetData}
               geoJsonData={geoJsonData}
-              weightings={weightings}
               selectedWard={selectedWard}
               setSelectedWard={setSelectedWard}
-              setWeightings={setWeightings}
+              weightingsState={weightingsState as StatePair<IWeightings>}
               showTopState={showTopState}
               showAboveState={showAboveState}
             />
