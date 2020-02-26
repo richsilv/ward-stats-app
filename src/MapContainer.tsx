@@ -193,6 +193,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   return (
     <React.Fragment>
       <LeafletMap
+        preferCanvas
         ref={mapRef as DefinedMapRef}
         zoom={zoom}
         center={center}

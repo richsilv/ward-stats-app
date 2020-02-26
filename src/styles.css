@@ -60,8 +60,8 @@ body {
 .leaflet-search-wrap .search-control-icon-button {
   align-items: center;
 }
-/* 
-.leaflet-fade-anim .leaflet-tile,
+
+/* .leaflet-fade-anim .leaflet-tile,
 .leaflet-zoom-anim .leaflet-zoom-animated {
   will-change: auto !important;
 } */
