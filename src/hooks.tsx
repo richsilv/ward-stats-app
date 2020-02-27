@@ -368,3 +368,18 @@ export function useWorkerComputation<T>(
 
   return value;
 }
+
+export function useWindowSize(): { width: number; height: number } {
+  const [size, setSize] = React.useState({ width: 1000, height: 1000 });
+
+  const measureHeight = React.useCallback(() => {
+    setSize({ width: window.innerWidth, height: window.innerHeight });
+  }, []);
+
+  React.useEffect(() => {
+    window.addEventListener("resize", measureHeight);
+    return () => window.removeEventListener("resize", measureHeight);
+  }, [measureHeight]);
+
+  return size;
+}
