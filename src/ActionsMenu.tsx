@@ -8,7 +8,7 @@ import {
   useTheme,
   Backdrop
 } from "@material-ui/core";
-import { Edit, ListAlt, House } from "@material-ui/icons";
+import { Edit, ListAlt, House, Train } from "@material-ui/icons";
 import { WeightingsEditor } from "./WeightingsEditor";
 import { TopWards } from "./TopWards";
 import { SpeedDial, SpeedDialIcon, SpeedDialAction } from "@material-ui/lab";
@@ -36,6 +36,7 @@ interface IActionsMenuProps {
   readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
+  readonly showStationsState: StatePair<boolean>;
   readonly zoomToWard: (wardCode: string) => void;
 }
 
@@ -83,6 +84,7 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
   weightingsState,
   showTopState,
   showAboveState,
+  showStationsState,
   zoomToWard
 }) => {
   const theme = useTheme();
@@ -180,6 +182,9 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
     },
     [dispatch]
   );
+  const toggleShowStations = React.useCallback(() => {
+    showStationsState[1](currentShowStations => !currentShowStations);
+  }, [showStationsState]);
 
   const setOpenFactory = React.useCallback(
     (pane: Pane) => () => {
@@ -259,9 +264,14 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
         onClick: () => {
           dispatch({ type: "openPane", pane: "weightings" });
         }
+      },
+      {
+        name: `${showStationsState[0] ? "Hide" : "Show"} stations`,
+        icon: <Train color={showStationsState[0] ? "primary" : "inherit"} />,
+        onClick: toggleShowStations
       }
     ];
-  }, [dispatch, openRightmoveLink]);
+  }, [dispatch, openRightmoveLink, showStationsState[0]]);
 
   return (
     <React.Fragment>

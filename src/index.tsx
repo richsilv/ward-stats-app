@@ -86,6 +86,10 @@ function App() {
     "showAbove",
     null
   );
+  const showStationsState = useLocallyStoredState<boolean>(
+    "showStations",
+    true
+  );
   const [weightings, setWeightings] = weightingsState;
 
   const [sheetDataResponse, setSheetDataResponse] = React.useState<
@@ -165,6 +169,7 @@ function App() {
               weightingsState={weightingsState as StatePair<IWeightings>}
               showTopState={showTopState}
               showAboveState={showAboveState}
+              showStationsState={showStationsState}
             />
           ) : sheetDataResponse.isLoading() ||
             geoJsonDataResponse.isLoading() ? (

@@ -59,6 +59,7 @@ interface MapContainerProps {
   readonly geoJsonData: GeoJSON.FeatureCollection;
   readonly showTop: number | null;
   readonly showAbove: number | null;
+  readonly showStations: boolean;
   readonly setSelectedWard: (ward: string) => void;
 }
 
@@ -70,6 +71,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   selectedWard,
   showTop,
   showAbove,
+  showStations,
   setSelectedWard
 }) => {
   const theme = useTheme();
@@ -219,7 +221,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
             onClick={onClick}
           />
         ) : null}
-        {zoom >= 10 ? (
+        {zoom >= 10 && showStations ? (
           <FeatureGroup>
             {stationsToRender.map((station: IStation) => (
               <Circle

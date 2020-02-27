@@ -23,6 +23,7 @@ interface IDataContainerProps {
   readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
+  readonly showStationsState: StatePair<boolean>;
 }
 
 export const DataContainer: React.FC<IDataContainerProps> = ({
@@ -33,7 +34,8 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
   selectedWard,
   setSelectedWard,
   showTopState,
-  showAboveState
+  showAboveState,
+  showStationsState
 }) => {
   const scoresMeta = useWorkerComputation<{
     minScore: number;
@@ -84,6 +86,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         setSelectedWard={setSelectedWard}
         showTop={showTopState[0]}
         showAbove={showAboveState[0]}
+        showStations={showStationsState[0]}
       />
       {selectedWardStats && selectedWardDetails ? (
         <WardDetails
@@ -102,6 +105,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         weightingsState={weightingsState}
         showTopState={showTopState}
         showAboveState={showAboveState}
+        showStationsState={showStationsState}
       />
       <SearchBar mapRef={mapRef} />
     </div>
