@@ -4,6 +4,7 @@ export function openIndexedDB(
   databaseName: string
 ): Promise<IDBDatabase | null> {
   if (!("indexedDB" in window)) {
+    console.warn("No IndexedDB available");
     return Promise.resolve(null);
   }
 
@@ -29,6 +30,7 @@ export function openIndexedDB(
         keyPath: "id"
       });
       objectStore.transaction.oncomplete = function() {
+        console.info(`Set up objectStore ${osName}`);
         resolve(db);
       };
     };
@@ -91,6 +93,7 @@ export function getIndexedDBValue<T, S = T>(
             };
             return deserialiser(result);
           })
+          .then(resolve)
           .catch(catchFallbackFailure);
       };
     });

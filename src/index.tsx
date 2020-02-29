@@ -154,6 +154,8 @@ function App() {
 
   const sheetData = sheetDataResponse.data();
   const geoJsonData = geoJsonDataResponse.data();
+  const sheetDataError = sheetDataResponse.error();
+  const geoJsonDataError = geoJsonDataResponse.error();
 
   return (
     <ThemeProvider theme={theme}>
@@ -176,13 +178,13 @@ function App() {
             <LinearProgress className={classes.progress} />
           ) : (
             <React.Fragment>
-              {sheetDataResponse.error() ? (
+              {sheetDataError ? (
                 <Typography variant="body1" paragraph color="error">
-                  {sheetDataResponse.error()}
+                  {sheetDataError.message}
                 </Typography>
-              ) : geoJsonDataResponse.error() ? (
+              ) : geoJsonDataError ? (
                 <Typography variant="body1" paragraph color="error">
-                  {geoJsonDataResponse.error()}
+                  {geoJsonDataError.message}
                 </Typography>
               ) : (
                 <LinearProgress className={classes.progress} />
