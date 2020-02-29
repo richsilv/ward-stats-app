@@ -120,9 +120,9 @@ export const WeightingsEditor: React.FC<IWeightingsProps> = ({
                 label={header}
                 value={weight || 0}
                 inputProps={{
-                  step: 0.5,
-                  type: "number",
-                  inputMode: "numeric"
+                  type: "text",
+                  inputMode: "numeric",
+                  pattern: "[0-9\\.\\-]*"
                 }}
                 type="number"
                 onChange={onChangeWeightArray.get(header)}

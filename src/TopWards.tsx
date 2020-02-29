@@ -171,41 +171,43 @@ export const TopWards: React.FC<ITopWardsProps> = ({
   );
 };
 
-function WithHeader(props: any) {
-  const { children, ...otherProps } = props;
-  return (
-    <div {...otherProps}>
-      <Box
-        style={{
-          position: "sticky",
-          top: -1,
-          zIndex: 1,
-          minWidth: TABLE_MIN_WIDTH,
-          backgroundColor: "white",
-          display: "flex",
-          width: "100%",
-          boxSizing: "border-box",
-          height: ROW_HEIGHT,
-          alignItems: "center"
-        }}
-      >
-        <Cell isHeader width={COLUMN_WIDTHS[0]} height={ROW_HEIGHT}>
-          Rank
-        </Cell>
-        <Cell isHeader width={COLUMN_WIDTHS[1]} height={ROW_HEIGHT}>
-          Ward Name
-        </Cell>
-        <Cell isHeader width={COLUMN_WIDTHS[2]} height={ROW_HEIGHT}>
-          Local Authority
-        </Cell>
-        <Cell isHeader width={COLUMN_WIDTHS[3]} height={ROW_HEIGHT}>
-          Region
-        </Cell>
-        <Cell isHeader width={COLUMN_WIDTHS[4]} height={ROW_HEIGHT}>
-          Score
-        </Cell>
-      </Box>
-      {children}
-    </div>
-  );
+class WithHeader extends React.Component {
+  public render() {
+    const { children, ...otherProps } = this.props;
+    return (
+      <div {...otherProps}>
+        <Box
+          style={{
+            position: "sticky",
+            top: -1,
+            zIndex: 1,
+            minWidth: TABLE_MIN_WIDTH,
+            backgroundColor: "white",
+            display: "flex",
+            width: "100%",
+            boxSizing: "border-box",
+            height: ROW_HEIGHT,
+            alignItems: "center"
+          }}
+        >
+          <Cell isHeader width={COLUMN_WIDTHS[0]} height={ROW_HEIGHT}>
+            Rank
+          </Cell>
+          <Cell isHeader width={COLUMN_WIDTHS[1]} height={ROW_HEIGHT}>
+            Ward Name
+          </Cell>
+          <Cell isHeader width={COLUMN_WIDTHS[2]} height={ROW_HEIGHT}>
+            Local Authority
+          </Cell>
+          <Cell isHeader width={COLUMN_WIDTHS[3]} height={ROW_HEIGHT}>
+            Region
+          </Cell>
+          <Cell isHeader width={COLUMN_WIDTHS[4]} height={ROW_HEIGHT}>
+            Score
+          </Cell>
+        </Box>
+        {children}
+      </div>
+    );
+  }
 }

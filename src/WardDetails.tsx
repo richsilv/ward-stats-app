@@ -5,7 +5,8 @@ import {
   WARD_NAME_FIELD,
   WARD_CODE_FIELD,
   NORMALISED_EXTENSION_REGEXP,
-  RANKING_EXTENSION_REGEXP
+  RANKING_EXTENSION_REGEXP,
+  RANKING_EXTENSION
 } from "./constants";
 import {
   SwipeableDrawer,
@@ -27,8 +28,14 @@ const IGNORED_FIELDS = [
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    drawerContainer: {
+      maxWidth: "100%"
+    },
     drawer: {
-      padding: theme.spacing(2)
+      padding: theme.spacing(2),
+      maxWidth: "100%",
+      overflowX: "scroll",
+      boxSizing: "border-box"
     }
   })
 );
@@ -70,7 +77,7 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
   }, [selectedWardDetails, setIsOpen]);
 
   const content = selectedWardDetails ? (
-    <div className={classes.drawer}>
+    <React.Fragment>
       <Typography variant="h2" component="h1">
         {selectedWardDetails[WARD_NAME_FIELD]}
       </Typography>
@@ -79,19 +86,33 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
       <Typography>
         Rank: {rank} of {total}
       </Typography>
-      {Object.keys(selectedWardDetails).map(header =>
-        IGNORED_FIELDS.includes(header) ||
-        NORMALISED_EXTENSION_REGEXP.test(header) ||
-        RANKING_EXTENSION_REGEXP.test(header) ? null : (
+      {Object.keys(selectedWardDetails).map(header => {
+        if (
+          IGNORED_FIELDS.includes(header) ||
+          NORMALISED_EXTENSION_REGEXP.test(header) ||
+          RANKING_EXTENSION_REGEXP.test(header)
+        ) {
+          return null;
+        }
+        const rankBase = selectedWardDetails[`${header}${RANKING_EXTENSION}`];
+        const rankTerm =
+          typeof rankBase === "number"
+            ? ` (
+          ${Math.round(rankBase * total)}
+          / ${total})`
+            : "";
+        return (
           <Typography key={header}>
             {header}: {selectedWardDetails[header]}
+            {rankTerm}
           </Typography>
-        )
-      )}
-    </div>
+        );
+      })}
+    </React.Fragment>
   ) : null;
   return (
     <SwipeableDrawer
+      classes={{ root: classes.drawerContainer, paper: classes.drawer }}
       anchor="right"
       open={isOpen}
       onClose={onSwipeFactory(null)}
