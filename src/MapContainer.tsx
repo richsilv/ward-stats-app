@@ -188,8 +188,10 @@ export const MapContainer: React.FC<MapContainerProps> = ({
   );
 
   const geoJsonRefCallback = React.useCallback((element: any) => {
-    element.leafletElement.bringToBack();
-    geoJsonLayer.current = element.leafletElement;
+    if (element) {
+      element.leafletElement.bringToBack();
+      geoJsonLayer.current = element.leafletElement;
+    }
   }, []);
 
   return (
