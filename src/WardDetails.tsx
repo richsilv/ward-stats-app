@@ -97,8 +97,7 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
         const rankBase = selectedWardDetails[`${header}${RANKING_EXTENSION}`];
         const rankTerm =
           typeof rankBase === "number"
-            ? ` (
-          ${Math.round(rankBase * total)}
+            ? ` (${Math.round((1 - rankBase) * total) + 1}
           / ${total})`
             : "";
         return (

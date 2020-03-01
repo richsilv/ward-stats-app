@@ -1,30 +1,19 @@
-// Remove this eventually
-/* global gapi */
 import * as React from "react";
 import { render } from "react-dom";
 import {
   Container,
   createMuiTheme,
   LinearProgress,
-  Typography,
-  Theme
+  Typography
 } from "@material-ui/core";
 import { ThemeProvider, createStyles, makeStyles } from "@material-ui/styles";
 
 import {
-  API_KEY,
-  CLIENT_ID,
-  DISCOVERY_DOCS,
-  SCOPE,
   NON_COMPARISON_FIELDS,
   NORMALISED_EXTENSION_REGEXP,
-  RANKING_EXTENSION_REGEXP,
-  WARD_STATS_FILE,
-  WARD_STATS_RANGE
+  RANKING_EXTENSION_REGEXP
 } from "./constants";
-import { GoogleAuth } from "./GoogleAuth";
 import {
-  Ward,
   IWeightings,
   ScoreType,
   SheetData,
@@ -35,13 +24,9 @@ import {
 import { csvToObjects, normaliseAll, arrayToMap } from "./utils";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
-import {
-  getGithubSheetData,
-  convertGeoJSONData,
-  getGithubGeoJson
-} from "./non-hooks";
-import { ConvertedGeoJSONData, MapRef } from "./types";
-import { GEO_JSON_FILE, WARD_CODE_FIELD } from "./constants";
+import { getGithubSheetData, getGithubGeoJson } from "./non-hooks";
+import { MapRef } from "./types";
+import { WARD_CODE_FIELD } from "./constants";
 
 import "./styles.css";
 import { useLocallyStoredState } from "./hooks";
