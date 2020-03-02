@@ -1,4 +1,4 @@
-/* global gapi */
+/* global process */
 import * as React from "react";
 import { getCsvParser } from "basic-csv-parser";
 
@@ -6,109 +6,19 @@ import { ApiResponse, Ward, SheetData, ConvertedGeoJSONData } from "./types";
 
 const parser = getCsvParser({});
 
-export async function getSheetData({
-  sheetName,
-  range
-}: {
-  sheetName: string;
-  range: string;
-}) {
-  const sheetDetails: any = await new Promise((resolve, reject) =>
-    gapi.client.drive.files
-      .list({
-        q: `name='${sheetName}'`,
-        pageSize: 1,
-        fields: "nextPageToken, files(id, name)"
-      })
-      .then(
-        response =>
-          resolve(
-            (response.result.files as Array<gapi.client.drive.File>)[0] || null
-          ),
-        error => {
-          reject(error);
-        }
-      )
-  );
-  if (!sheetDetails) {
-    throw new Error("Cannot find sheet.");
-  }
-  const sheetData = await new Promise<SheetData>((resolve, reject) =>
-    gapi.client.sheets.spreadsheets.values
-      .get({
-        spreadsheetId: sheetDetails.id as string,
-        range,
-        majorDimension: "ROWS",
-        valueRenderOption: "UNFORMATTED_VALUE"
-      })
-      .then(
-        response => {
-          if (!response.result.values) {
-            return reject("No value data returned.");
-          }
-          resolve(response.result.values as Array<Array<number | string>>);
-        },
-        error => {
-          reject(error);
-        }
-      )
-  );
-  return sheetData;
-}
+const DATA_PREFIX =
+  process.env.NODE_ENV === "development"
+    ? "/local-data/"
+    : "https://raw.githubusercontent.com/richsilv/ward-stats-app/master/";
 
 export async function getGithubSheetData() {
-  return fetch(
-    "https://raw.githubusercontent.com/richsilv/ward-stats-app/master/Ward%20stats%20data.csv"
-  )
+  return fetch(`${DATA_PREFIX}Ward%20stats%20data.csv`)
     .then(result => result.text())
     .then(parser);
 }
 
-export async function getDriveDocument<T>({ filename }: { filename: string }) {
-  const geoJSONFileDetails: any = await new Promise((resolve, reject) =>
-    gapi.client.drive.files
-      .list({
-        q: `name='${filename}'`,
-        pageSize: 1,
-        fields: "nextPageToken, files(id, name)"
-      })
-      .then(
-        response => {
-          resolve(
-            (response.result.files as Array<gapi.client.drive.File>)[0] || null
-          );
-        },
-        error => {
-          reject(error);
-        }
-      )
-  );
-
-  if (!geoJSONFileDetails) {
-    throw new Error("Cannot find document.");
-  }
-
-  const geoJSONDataResponse = await new Promise((resolve, reject) =>
-    gapi.client.drive.files
-      .get({
-        fileId: geoJSONFileDetails.id as string,
-        alt: "media"
-      })
-      .then(
-        response => resolve(response.result as GeoJSON.FeatureCollection),
-        error => {
-          reject(error);
-        }
-      )
-  );
-
-  return geoJSONDataResponse as T;
-}
-
 export function getGithubGeoJson() {
-  return fetch(
-    "https://raw.githubusercontent.com/richsilv/ward-stats-app/master/Ward%20GeoJson%20simplified.json"
-  )
+  return fetch(`${DATA_PREFIX}Ward%20GeoJson%20simplified.json`)
     .then(result => result.text())
     .then(text => JSON.parse(text));
 }

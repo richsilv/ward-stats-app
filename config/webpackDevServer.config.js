@@ -5,10 +5,19 @@ const evalSourceMapMiddleware = require("react-dev-utils/evalSourceMapMiddleware
 const noopServiceWorkerMiddleware = require("react-dev-utils/noopServiceWorkerMiddleware");
 const ignoredFiles = require("react-dev-utils/ignoredFiles");
 const paths = require("./paths");
+const path = require("path");
 const fs = require("fs");
 
 const protocol = process.env.HTTPS === "true" ? "https" : "http";
 const host = process.env.HOST || "0.0.0.0";
+
+const data = ["Ward GeoJson simplified.json", "Ward stats data.csv"].reduce(
+  (obj, file) => {
+    obj[file] = fs.readFileSync(path.join(__dirname, "..", file)).toString();
+    return obj;
+  },
+  {}
+);
 
 module.exports = function(proxy, allowedHost) {
   return {
@@ -81,7 +90,6 @@ module.exports = function(proxy, allowedHost) {
       disableDotRule: true
     },
     public: allowedHost,
-    proxy,
     before(app, server) {
       if (fs.existsSync(paths.proxySetup)) {
         // This registers user provided middleware for proxy reasons
@@ -99,6 +107,10 @@ module.exports = function(proxy, allowedHost) {
       // it used the same host and port.
       // https://github.com/facebook/create-react-app/issues/2272#issuecomment-302832432
       app.use(noopServiceWorkerMiddleware());
+
+      app.get("/local-data/:dataFile", function(req, res) {
+        res.send(data[req.params.dataFile]);
+      });
     }
   };
 };
