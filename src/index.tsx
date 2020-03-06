@@ -19,9 +19,16 @@ import {
   SheetData,
   ApiResponse,
   IData,
-  StatePair
+  StatePair,
+  FieldType,
+  ISheetDataMaps
 } from "./types";
-import { csvToObjects, normaliseAll, arrayToMap } from "./utils";
+import {
+  csvToObjects,
+  normaliseAll,
+  arrayToMap,
+  makeFieldTypes
+} from "./utils";
 import { DataContainer } from "./DataContainer";
 import { openIndexedDB, getIndexedDBValue } from "./indexedDB";
 import { getGithubSheetData, getGithubGeoJson } from "./non-hooks";
@@ -77,9 +84,9 @@ function App() {
   );
   const [weightings, setWeightings] = weightingsState;
 
-  const [sheetDataResponse, setSheetDataResponse] = React.useState<
-    ApiResponse<Map<string, IData>>
-  >(ApiResponse.preload<Map<string, IData>>());
+  const [sheetResponse, setSheetResponse] = React.useState<
+    ApiResponse<ISheetDataMaps>
+  >(ApiResponse.preload<ISheetDataMaps>());
   const [geoJsonDataResponse, setGeoJsonDataResponse] = React.useState<
     ApiResponse<GeoJSON.FeatureCollection>
   >(ApiResponse.preload<GeoJSON.FeatureCollection>());
@@ -87,15 +94,22 @@ function App() {
   const dbPromise = React.useMemo(() => openIndexedDB(dbName), []);
 
   const makeConvertedSheetData = React.useCallback(async () => {
-    return await getGithubSheetData().then((sheetData: SheetData) =>
-      arrayToMap(normaliseAll(csvToObjects(sheetData)), WARD_CODE_FIELD)
-    );
+    return await getGithubSheetData().then((sheetData: SheetData) => {
+      const fieldTypes = sheetData.splice(1, 1)[0];
+      return {
+        data: arrayToMap(
+          normaliseAll(csvToObjects(sheetData)),
+          WARD_CODE_FIELD
+        ),
+        fields: makeFieldTypes(sheetData[0], fieldTypes)
+      };
+    });
   }, []);
 
   React.useEffect(() => {
     setWrappedState(
-      setSheetDataResponse,
-      getIndexedDBValue<Map<string, IData>>(
+      setSheetResponse,
+      getIndexedDBValue<ISheetDataMaps>(
         dbPromise,
         "sheetData",
         makeConvertedSheetData
@@ -104,10 +118,10 @@ function App() {
   }, [dbPromise, makeConvertedSheetData]);
 
   React.useEffect(() => {
-    const data = sheetDataResponse.data();
+    const data = sheetResponse.data();
     if (data && !weightings) {
       setWeightings(
-        Object.keys(data.values().next().value).reduce(
+        Object.keys(data.data.values().next().value).reduce(
           (objectSoFar: IWeightings, header) => {
             if (
               !NON_COMPARISON_FIELDS.includes(header) &&
@@ -122,12 +136,12 @@ function App() {
         )
       );
     }
-  }, [sheetDataResponse]);
+  }, [sheetResponse]);
 
   React.useEffect(() => {
     setWrappedState(
       setGeoJsonDataResponse,
-      getIndexedDBValue<GeoJSON.FeatureCollection, GeoJSON.FeatureCollection>(
+      getIndexedDBValue<GeoJSON.FeatureCollection>(
         dbPromise,
         "geoJSON",
         getGithubGeoJson
@@ -137,19 +151,20 @@ function App() {
 
   const [selectedWard, setSelectedWard] = React.useState<string | null>(null);
 
-  const sheetData = sheetDataResponse.data();
+  const sheet = sheetResponse.data();
   const geoJsonData = geoJsonDataResponse.data();
-  const sheetDataError = sheetDataResponse.error();
+  const sheetError = sheetResponse.error();
   const geoJsonDataError = geoJsonDataResponse.error();
 
   return (
     <ThemeProvider theme={theme}>
       <div className="App">
         <Container>
-          {sheetData && geoJsonData && weightingsState[0] ? (
+          {sheet && geoJsonData && weightingsState[0] ? (
             <DataContainer
               mapRef={mapRef}
-              sheetData={sheetData}
+              sheetData={sheet.data}
+              fields={sheet.fields}
               geoJsonData={geoJsonData}
               selectedWard={selectedWard}
               setSelectedWard={setSelectedWard}
@@ -158,14 +173,13 @@ function App() {
               showAboveState={showAboveState}
               showStationsState={showStationsState}
             />
-          ) : sheetDataResponse.isLoading() ||
-            geoJsonDataResponse.isLoading() ? (
+          ) : sheetResponse.isLoading() || geoJsonDataResponse.isLoading() ? (
             <LinearProgress className={classes.progress} />
           ) : (
             <React.Fragment>
-              {sheetDataError ? (
+              {sheetError ? (
                 <Typography variant="body1" paragraph color="error">
-                  {sheetDataError.message}
+                  {sheetError.message}
                 </Typography>
               ) : geoJsonDataError ? (
                 <Typography variant="body1" paragraph color="error">

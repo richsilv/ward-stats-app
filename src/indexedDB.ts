@@ -37,25 +37,21 @@ export function openIndexedDB(
   });
 }
 
-export function getIndexedDBValue<T, S = T>(
+export function getIndexedDBValue<S>(
   dbPromise: Promise<IDBDatabase | null>,
   key: string,
-  fallback: (key: string) => Promise<S>,
-  deserialiser: (jsonPromise: S) => Promise<T> = value =>
-    Promise.resolve((value as unknown) as T)
-): Promise<T> {
-  return dbPromise.then<T>(db => {
+  fallback: (key: string) => Promise<S>
+): Promise<S> {
+  return dbPromise.then<S>(db => {
     if (!db) {
-      return fallback(key)
-        .then(deserialiser)
-        .catch((error: Error) => {
-          console.error("Could not calculate fallback value or deserialise!");
-          console.error(error);
-          throw error;
-        });
+      return fallback(key).catch((error: Error) => {
+        console.error("Could not calculate fallback value or deserialise!");
+        console.error(error);
+        throw error;
+      });
     }
 
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<S>((resolve, reject) => {
       const catchFallbackFailure = (error: Error) => {
         console.error("Could not calculate fallback value or deserialise!");
         console.error(error);
@@ -70,18 +66,15 @@ export function getIndexedDBValue<T, S = T>(
         console.error(`Could not read key ${key} from DB ${db.name}`);
         console.error(error);
         return fallback(key)
-          .then(deserialiser)
           .then(resolve)
           .catch(catchFallbackFailure);
       };
       readRequest.onsuccess = function() {
         if (readRequest.result) {
-          return deserialiser(readRequest.result.value)
-            .then(resolve)
-            .catch(catchFallbackFailure);
+          return resolve(readRequest.result.value);
         }
 
-        Promise.resolve(fallback(key))
+        fallback(key)
           .then(result => {
             const writeOs = db
               .transaction([db.name + OBJECT_STORE_MODIFIER], "readwrite")
@@ -91,7 +84,7 @@ export function getIndexedDBValue<T, S = T>(
               console.error(`Could not write new key ${key} to DB ${db.name}`);
               console.error(error);
             };
-            return deserialiser(result);
+            return result;
           })
           .then(resolve)
           .catch(catchFallbackFailure);

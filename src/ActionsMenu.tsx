@@ -235,7 +235,6 @@ export const ActionsMenu: React.FC<IActionsMenuProps> = ({
       [north, west]
     ];
     const encoded = geojsonPolyline.encode(polygon);
-    console.log(polygon, encoded);
     window.open(
       `https://www.rightmove.co.uk/property-for-sale/map.html?locationIdentifier=USERDEFINEDAREA%5E%7B%22polylines%22%3A%22${encoded}%22%7D`
     );

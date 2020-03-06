@@ -1,4 +1,4 @@
-import { IData, IWeightings, ScoreType, MapRef } from "./types";
+import { IData, IWeightings, ScoreType, MapRef, FieldType } from "./types";
 import {
   NON_COMPARISON_FIELDS,
   NORMALISED_EXTENSION,
@@ -114,4 +114,18 @@ export function filterByBounds<T extends { lat: number; lon: number }>(
   return items.filter(({ lat, lon }) => {
     return bounds.contains([lat, lon]);
   });
+}
+
+export function makeFieldTypes(
+  fields: Array<string | number>,
+  types: Array<string | number>
+) {
+  const typesMap = new Map<string, FieldType>();
+  fields.forEach((field, index) => {
+    typesMap.set(
+      field as string,
+      (types[index] as FieldType) || FieldType.Text
+    );
+  });
+  return typesMap;
 }

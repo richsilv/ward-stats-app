@@ -102,6 +102,11 @@ export class ApiResponse<T> {
 
 export type SheetData = Array<Array<number | string>>;
 
+export interface ISheetDataMaps {
+  readonly data: Map<string, IData>;
+  readonly fields: Map<string, FieldType>;
+}
+
 export interface IData {
   [WARD_CODE_FIELD]: string;
   [header: string]: string | number;
@@ -139,3 +144,9 @@ export type MapRef = React.MutableRefObject<
 export type DefinedMapRef = React.MutableRefObject<
   ReactLeafletMap<any, LeafletMap>
 >;
+export enum FieldType {
+  Text = "_",
+  Number = "#",
+  Percentage = "%",
+  Currency = "£"
+}

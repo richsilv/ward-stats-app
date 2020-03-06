@@ -1,6 +1,7 @@
+import numeral from "numeral";
 import * as React from "react";
 
-import { Ward, IData } from "./types";
+import { Ward, IData, FieldType } from "./types";
 import {
   WARD_NAME_FIELD,
   WARD_CODE_FIELD,
@@ -26,7 +27,7 @@ const IGNORED_FIELDS = [
   WARD_NAME_FIELD
 ];
 
-const useStyles = makeStyles((theme: Theme) =>
+const useStylesWardDetails = makeStyles((theme: Theme) =>
   createStyles({
     drawerContainer: {
       maxWidth: "100%"
@@ -45,6 +46,7 @@ interface IWardDetailsProps {
   readonly score: number;
   readonly rank: number;
   readonly total: number;
+  readonly fields: Map<string, FieldType>;
   readonly setSelectedWard: (ward: string | null) => void;
 }
 
@@ -53,10 +55,11 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
   score,
   rank,
   total,
+  fields,
   setSelectedWard
 }) => {
   const theme = useTheme();
-  const classes = useStyles(theme);
+  const classes = useStylesWardDetails(theme);
 
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -82,31 +85,22 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
         {selectedWardDetails[WARD_NAME_FIELD]}
       </Typography>
       <Typography>{selectedWardDetails[WARD_NAME_FIELD]}</Typography>
-      <Typography>Score: {Math.round(score * 10000) / 100}%</Typography>
+      <Typography>Score: {numeral(score).format("0[.]00%")}</Typography>
       <Typography>
         Rank: {rank} of {total}
       </Typography>
-      {Object.keys(selectedWardDetails).map(header => {
-        if (
-          IGNORED_FIELDS.includes(header) ||
-          NORMALISED_EXTENSION_REGEXP.test(header) ||
-          RANKING_EXTENSION_REGEXP.test(header)
-        ) {
-          return null;
-        }
-        const rankBase = selectedWardDetails[`${header}${RANKING_EXTENSION}`];
-        const rankTerm =
-          typeof rankBase === "number"
-            ? ` (${Math.round((1 - rankBase) * total) + 1}
-          / ${total})`
-            : "";
-        return (
-          <Typography key={header}>
-            {header}: {selectedWardDetails[header]}
-            {rankTerm}
-          </Typography>
-        );
-      })}
+      {Object.keys(selectedWardDetails).map(header =>
+        IGNORED_FIELDS.includes(header) ||
+        NORMALISED_EXTENSION_REGEXP.test(header) ||
+        RANKING_EXTENSION_REGEXP.test(header) ? null : (
+          <DetailsRow
+            wardDetails={selectedWardDetails}
+            header={header}
+            fields={fields}
+            total={total}
+          />
+        )
+      )}
     </React.Fragment>
   ) : null;
   return (
@@ -121,5 +115,77 @@ export const WardDetails: React.FC<IWardDetailsProps> = ({
     >
       {content}
     </SwipeableDrawer>
+  );
+};
+
+const formatForType = ({
+  fields,
+  details,
+  header
+}: {
+  fields: Map<string, FieldType>;
+  details: IData;
+  header: string;
+}) => {
+  switch (fields.get(header)) {
+    case FieldType.Number:
+      return numeral(details[header]).format("0,0[.]00");
+    case FieldType.Currency:
+      return numeral(details[header]).format("£ 0,0[.]00");
+    case FieldType.Percentage:
+      return numeral(details[header]).format("0[.]00%");
+    default:
+      return details[header];
+  }
+};
+
+interface IDetailsRowProps {
+  readonly wardDetails: IData;
+  readonly header: string;
+  readonly total: number;
+  readonly fields: Map<string, FieldType>;
+}
+
+const useStylesDetailsRow = makeStyles((theme: Theme) =>
+  createStyles({
+    rankColor: (props: IDetailsRowProps) => {
+      const rankBase = props.wardDetails[`${props.header}${RANKING_EXTENSION}`];
+      console.log(rankBase);
+      return {
+        color:
+          typeof rankBase === "number"
+            ? rankBase > 0.75
+              ? theme.palette.success.dark
+              : rankBase < 0.25
+              ? theme.palette.error.dark
+              : theme.palette.grey[600]
+            : theme.palette.grey[600]
+      };
+    }
+  })
+);
+
+const DetailsRow: React.FC<IDetailsRowProps> = props => {
+  const { wardDetails, header, fields, total } = props;
+
+  const theme = useTheme();
+  const styles = useStylesDetailsRow(props);
+
+  const rankBase = wardDetails[`${header}${RANKING_EXTENSION}`];
+  const rankTerm =
+    typeof rankBase === "number" ? (
+      <Typography
+        display="inline"
+        variant="body1"
+        className={styles.rankColor}
+      >{` (${numeral((1 - rankBase) * total + 1).format("0,0")}
+    / ${numeral(total).format("0,0")})`}</Typography>
+    ) : null;
+
+  return (
+    <Typography key={header}>
+      {header}: {formatForType({ fields, details: wardDetails, header })}
+      {rankTerm}
+    </Typography>
   );
 };

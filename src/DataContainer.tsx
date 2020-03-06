@@ -4,7 +4,14 @@ import * as L from "leaflet";
 import { MapContainer } from "./MapContainer";
 import { WardDetails } from "./WardDetails";
 import { WeightingsEditor } from "./WeightingsEditor";
-import { Ward, IWeightings, IData, StatePair, MapRef } from "./types";
+import {
+  Ward,
+  IWeightings,
+  IData,
+  StatePair,
+  MapRef,
+  FieldType
+} from "./types";
 import { WARD_CODE_FIELD, QUANTUM, WARD_CODE_CODE } from "./constants";
 import { TopWards } from "./TopWards";
 import { useWorkerComputation } from "./hooks";
@@ -17,18 +24,20 @@ let hasRun = { value: false };
 interface IDataContainerProps {
   readonly mapRef: MapRef;
   readonly sheetData: Map<string, IData>;
+  readonly fields: Map<string, FieldType>;
   readonly geoJsonData: GeoJSON.FeatureCollection;
   readonly selectedWard: string | null;
-  readonly setSelectedWard: (ward: string | null) => void;
   readonly weightingsState: StatePair<IWeightings>;
   readonly showTopState: StatePair<number | null>;
   readonly showAboveState: StatePair<number | null>;
   readonly showStationsState: StatePair<boolean>;
+  readonly setSelectedWard: (ward: string | null) => void;
 }
 
 export const DataContainer: React.FC<IDataContainerProps> = ({
   mapRef,
   sheetData,
+  fields,
   geoJsonData,
   weightingsState,
   selectedWard,
@@ -92,6 +101,7 @@ export const DataContainer: React.FC<IDataContainerProps> = ({
         <WardDetails
           selectedWardDetails={selectedWardDetails}
           setSelectedWard={setSelectedWard}
+          fields={fields}
           score={selectedWardStats.score}
           rank={selectedWardStats.rank}
           total={sheetData.size}
